@@ -42,7 +42,12 @@ def merge_videos(video_paths: list[str | Path], out_path: str | Path) -> str:
     return str(out_path)
 
 
-async def generate_video_file(prompt: str, frame_path: str | Path) -> tuple[str, str]:
+async def generate_video_file(
+    prompt: str,
+    frame_path: str | Path,
+    megapixels: float | None = None,
+    steps: int | None = None,
+) -> tuple[str, str]:
     """MiniMax H3 图生视频：生成一段新视频并截取最后一帧
 
     返回 (视频文件路径, 最后一帧路径)；生成失败抛异常。
@@ -51,7 +56,7 @@ async def generate_video_file(prompt: str, frame_path: str | Path) -> tuple[str,
 
     ensure_dirs()
     frame_bytes = Path(frame_path).read_bytes()
-    video_bytes = await generate_video(prompt, frame_bytes)
+    video_bytes = await generate_video(prompt, frame_bytes, megapixels=megapixels, steps=steps)
     if not video_bytes:
         raise RuntimeError("视频生成失败（ComfyUI 未返回视频数据）")
 

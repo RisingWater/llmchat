@@ -100,6 +100,10 @@ def update_conversation(
         conv.title = body.title
     if body.system_prompt is not None:
         conv.system_prompt = body.system_prompt
+    if body.megapixels is not None:
+        conv.megapixels = body.megapixels
+    if body.steps is not None:
+        conv.steps = body.steps
     db.commit()
     db.refresh(conv)
     return conv

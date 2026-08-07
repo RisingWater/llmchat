@@ -36,4 +36,8 @@ def init_db():
                        "last_frame_path VARCHAR(500)")
         _ensure_column(conn, "conversations", "merged_video_path",
                        "merged_video_path VARCHAR(500)")
+        _ensure_column(conn, "conversations", "megapixels",
+                       "megapixels FLOAT DEFAULT 0.4")
+        _ensure_column(conn, "conversations", "steps",
+                       "steps INTEGER DEFAULT 16")
         conn.commit()

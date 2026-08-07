@@ -70,7 +70,12 @@ export async function getConversation(id: number): Promise<ConversationDetail> {
 
 export async function updateConversation(
   id: number,
-  data: { title?: string; system_prompt?: string }
+  data: {
+    title?: string;
+    system_prompt?: string;
+    megapixels?: number;
+    steps?: number;
+  }
 ): Promise<Conversation> {
   const res = await fetch(`${BASE}/conversations/${id}`, {
     method: "PUT",

@@ -61,6 +61,7 @@ class ComfyUIVideoGenerator:
         self._image_node = self._find_first("ETN_LoadImageBase64")
         self._seed_node = self._find_first("RandomNoise")
         self._resolution_node = self._find_first("ResolutionSelector")
+        self._scheduler_node = self._find_first("BasicScheduler")
 
     # ============================================================
     # 公开接口
@@ -72,6 +73,8 @@ class ComfyUIVideoGenerator:
         *,
         seed: Optional[int] = None,
         aspect_ratio: Optional[str] = None,
+        megapixels: Optional[float] = None,
+        steps: Optional[int] = None,
     ) -> str:
         """
         输入 prompt + base64 首帧图，返回生成的视频路径。
@@ -81,6 +84,8 @@ class ComfyUIVideoGenerator:
             image_b64    — 首帧图片的 base64 编码字符串（不带 data URI 前缀）
             seed         — 随机种子（None=用工作流默认值）
             aspect_ratio — 输出画面比例（None=按图片方向自动选择）
+            megapixels   — 目标总像素（百万像素，None=用工作流默认值）
+            steps        — 采样步数（None=用工作流默认值）
         """
         wf = self._copy_workflow()
         self._counter += 1
@@ -100,6 +105,11 @@ class ComfyUIVideoGenerator:
             ratio = aspect_ratio or self._detect_aspect_ratio(image_b64)
             if ratio:
                 self._set_input(wf, self._resolution_node, "aspect_ratio", ratio)
+            if megapixels is not None:
+                self._set_input(wf, self._resolution_node, "megapixels", megapixels)
+        # 采样步数
+        if steps is not None and self._scheduler_node:
+            self._set_input(wf, self._scheduler_node, "steps", steps)
 
         # 提交 → 等待 → 下载
         prompt_id = self._queue(wf)

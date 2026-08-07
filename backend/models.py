@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, LargeBinary
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, LargeBinary, Float
 from sqlalchemy.orm import relationship
 
 from backend.database import Base
@@ -16,6 +16,9 @@ class Conversation(Base):
     # 图生视频状态：下一轮输入帧路径、已合并视频路径
     last_frame_path = Column(String(500), nullable=True)
     merged_video_path = Column(String(500), nullable=True)
+    # 图生视频生成参数（可在前端设置）
+    megapixels = Column(Float, default=0.4)
+    steps = Column(Integer, default=16)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))

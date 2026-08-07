@@ -9,6 +9,7 @@ import type { Conversation, Message } from "../types";
 import ConversationList from "./ConversationList";
 import ChatArea from "./ChatArea";
 import SettingsPanel from "./SettingsPanel";
+import VideoSettingsPanel from "./VideoSettingsPanel";
 
 const { Header, Content } = Layout;
 
@@ -26,6 +27,7 @@ interface Props {
   onClearAll: () => void;
   onSendMessage: (content: string) => void;
   onUpdateSystemPrompt: (prompt: string) => void;
+  onUpdateVideoSettings: (megapixels: number, steps: number) => void;
   onLogout: () => void;
 }
 
@@ -43,6 +45,7 @@ export default function AppLayout({
   onClearAll,
   onSendMessage,
   onUpdateSystemPrompt,
+  onUpdateVideoSettings,
   onLogout,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -103,10 +106,11 @@ export default function AppLayout({
         onClose={() => setSettingsOpen(false)} width={300}
       >
         {currentConversation?.conv_type === "video" ? (
-          <div style={{ color: "#999", fontSize: 13, textAlign: "center", marginTop: 24 }}>
-            图生视频会话：每次输入提示词即触发视频生成，
-            生成后自动截取最后一帧用于下一轮。
-          </div>
+          <VideoSettingsPanel
+            megapixels={currentConversation?.megapixels ?? 0.4}
+            steps={currentConversation?.steps ?? 16}
+            onSave={(mp, st) => { onUpdateVideoSettings(mp, st); setSettingsOpen(false); }}
+          />
         ) : (
           <SettingsPanel
             systemPrompt={currentConversation?.system_prompt || ""}

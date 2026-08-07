@@ -3,6 +3,8 @@ export interface Conversation {
   title: string;
   conv_type: "chat" | "video";
   system_prompt: string;
+  megapixels: number;
+  steps: number;
   created_at: string;
   updated_at: string;
 }

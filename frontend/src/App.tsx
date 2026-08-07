@@ -222,6 +222,17 @@ export default function App() {
     [currentId]
   );
 
+  const updateVideoSettings = useCallback(
+    async (megapixels: number, steps: number) => {
+      if (!currentId) return;
+      await api.updateConversation(currentId, { megapixels, steps });
+      setConversations((prev) =>
+        prev.map((c) => (c.id === currentId ? { ...c, megapixels, steps } : c))
+      );
+    },
+    [currentId]
+  );
+
   const currentConv = conversations.find((c) => c.id === currentId) || null;
 
   if (!token) {
@@ -248,6 +259,7 @@ export default function App() {
         onClearAll={handleClearAll}
         onSendMessage={handleSend}
         onUpdateSystemPrompt={updateSystemPrompt}
+        onUpdateVideoSettings={updateVideoSettings}
         onLogout={handleLogout}
       />
       <VideoConversationModal
