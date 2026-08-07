@@ -5,9 +5,10 @@ import { SendOutlined } from "@ant-design/icons";
 interface Props {
   onSend: (content: string) => void;
   loading: boolean;
+  placeholder?: string;
 }
 
-export default function MessageInput({ onSend, loading }: Props) {
+export default function MessageInput({ onSend, loading, placeholder }: Props) {
   const [value, setValue] = useState("");
   const inputRef = useRef<any>(null);
 
@@ -47,7 +48,7 @@ export default function MessageInput({ onSend, loading }: Props) {
             handleSend();
           }
         }}
-        placeholder="输入消息... (Enter 发送, Shift+Enter 换行)"
+        placeholder={placeholder || "输入消息... (Enter 发送, Shift+Enter 换行)"}
         autoSize={{ minRows: 1, maxRows: 4 }}
         style={{ flex: 1, borderRadius: 20, padding: "6px 12px" }}
         disabled={loading}

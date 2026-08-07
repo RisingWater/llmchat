@@ -20,6 +20,7 @@ interface Props {
   loading: boolean;
   onSelectConversation: (id: number) => void;
   onNewConversation: () => void;
+  onNewVideoConversation: () => void;
   onDeleteConversation: (id: number) => void;
   onClearAll: () => void;
   onSendMessage: (content: string) => void;
@@ -35,6 +36,7 @@ export default function AppLayout({
   loading,
   onSelectConversation,
   onNewConversation,
+  onNewVideoConversation,
   onDeleteConversation,
   onClearAll,
   onSendMessage,
@@ -72,6 +74,7 @@ export default function AppLayout({
           streaming={streaming}
           loading={loading}
           conversationId={currentConversation?.id ?? null}
+          isVideo={currentConversation?.conv_type === "video"}
           onSend={onSendMessage}
         />
       </Content>
@@ -86,6 +89,7 @@ export default function AppLayout({
           currentId={currentConversation?.id || null}
           onSelect={(id) => { onSelectConversation(id); setDrawerOpen(false); }}
           onNew={() => { onNewConversation(); setDrawerOpen(false); }}
+          onNewVideo={() => { onNewVideoConversation(); setDrawerOpen(false); }}
           onDelete={onDeleteConversation}
           onClearAll={onClearAll}
         />
@@ -95,10 +99,17 @@ export default function AppLayout({
         title="会话设置" placement="right" open={settingsOpen}
         onClose={() => setSettingsOpen(false)} width={300}
       >
-        <SettingsPanel
-          systemPrompt={currentConversation?.system_prompt || ""}
-          onSave={(prompt) => { onUpdateSystemPrompt(prompt); setSettingsOpen(false); }}
-        />
+        {currentConversation?.conv_type === "video" ? (
+          <div style={{ color: "#999", fontSize: 13, textAlign: "center", marginTop: 24 }}>
+            图生视频会话：每次输入提示词即触发视频生成，
+            生成后自动截取最后一帧用于下一轮。
+          </div>
+        ) : (
+          <SettingsPanel
+            systemPrompt={currentConversation?.system_prompt || ""}
+            onSave={(prompt) => { onUpdateSystemPrompt(prompt); setSettingsOpen(false); }}
+          />
+        )}
       </Drawer>
     </Layout>
   );

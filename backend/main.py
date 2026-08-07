@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.auth import verify_password, create_token
 from backend.database import init_db
-from backend.routes import conversations, chat, images
+from backend.routes import conversations, chat, images, videos
 from backend.schemas import LoginRequest, LoginResponse
 
 
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(conversations.router)
 app.include_router(chat.router)
 app.include_router(images.router)  # 图片生成 + 从 DB 读取
+app.include_router(videos.router)  # 视频生成 + 从文件读取
 
 
 # ---- 登录 ----

@@ -25,6 +25,7 @@ class ConversationUpdate(BaseModel):
 class ConversationOut(BaseModel):
     id: int
     title: str
+    conv_type: str
     system_prompt: str
     created_at: datetime
     updated_at: datetime

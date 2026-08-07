@@ -1,5 +1,11 @@
-import { Button, List, Popconfirm, Typography } from "antd";
-import { PlusOutlined, DeleteOutlined, MessageOutlined, ClearOutlined } from "@ant-design/icons";
+import { Button, List, Popconfirm, Typography, Dropdown } from "antd";
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  MessageOutlined,
+  ClearOutlined,
+  VideoCameraOutlined,
+} from "@ant-design/icons";
 import type { Conversation } from "../types";
 
 interface Props {
@@ -7,6 +13,7 @@ interface Props {
   currentId: number | null;
   onSelect: (id: number) => void;
   onNew: () => void;
+  onNewVideo: () => void;
   onDelete: (id: number) => void;
   onClearAll: () => void;
 }
@@ -16,15 +23,28 @@ export default function ConversationList({
   currentId,
   onSelect,
   onNew,
+  onNewVideo,
   onDelete,
   onClearAll,
 }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ padding: 12 }}>
-        <Button type="primary" icon={<PlusOutlined />} block onClick={onNew}>
-          新建会话
-        </Button>
+        <Dropdown
+          menu={{
+            items: [
+              { key: "chat", label: "新建聊天", icon: <MessageOutlined /> },
+              { key: "video", label: "新建图生视频", icon: <VideoCameraOutlined /> },
+            ],
+            onClick: ({ key }) => (key === "video" ? onNewVideo() : onNew()),
+          }}
+          placement="bottom"
+          trigger={["click"]}
+        >
+          <Button type="primary" icon={<PlusOutlined />} block>
+            新建会话
+          </Button>
+        </Dropdown>
       </div>
 
       <List
@@ -55,7 +75,13 @@ export default function ConversationList({
             ]}
           >
             <List.Item.Meta
-              avatar={<MessageOutlined style={{ fontSize: 18, color: "#999" }} />}
+              avatar={
+                item.conv_type === "video" ? (
+                  <VideoCameraOutlined style={{ fontSize: 18, color: "#722ed1" }} />
+                ) : (
+                  <MessageOutlined style={{ fontSize: 18, color: "#999" }} />
+                )
+              }
               title={
                 <Typography.Text ellipsis style={{ fontSize: 14 }}>
                   {item.title}

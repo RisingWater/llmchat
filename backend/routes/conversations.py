@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.auth import get_current_user
 from backend.database import get_db
-from backend.models import Conversation, Message
+from backend.models import Conversation, Message, GeneratedImage
 from backend.schemas import (
     ConversationCreate,
     ConversationDetail,
@@ -34,6 +34,47 @@ def create_conversation(
     db.add(conv)
     db.commit()
     db.refresh(conv)
+    return conv
+
+
+@router.post("/video", response_model=ConversationOut)
+async def create_video_conversation(
+    file: UploadFile = File(...),
+    title: str | None = Form(None),
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """创建图生视频会话：上传第一张图片作为起始画面
+
+    无默认 system_prompt；首图存入 generated_images，作为会话第一条 user 消息
+    """
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "请上传第一张图片")
+
+    conv = Conversation(
+        title=title or "图生视频",
+        conv_type="video",
+        system_prompt="",
+    )
+    db.add(conv)
+    db.commit()
+    db.refresh(conv)
+
+    # 首图作为第一条 user 消息（先建消息拿到 id，再关联图片）
+    msg = Message(conversation_id=conv.id, role="user", content="")
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+
+    img = GeneratedImage(message_id=msg.id, prompt="起始画面", data=data)
+    db.add(img)
+    db.commit()
+    db.refresh(img)
+
+    msg.content = f"![起始画面](/api/images/{img.id})"
+    db.commit()
+
     return conv
 
 

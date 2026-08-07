@@ -9,10 +9,11 @@ interface Props {
   streaming: string;
   loading: boolean;
   conversationId: number | null;
+  isVideo: boolean;
   onSend: (content: string) => void;
 }
 
-export default function ChatArea({ messages, streaming, loading, conversationId, onSend }: Props) {
+export default function ChatArea({ messages, streaming, loading, conversationId, isVideo, onSend }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,7 +25,7 @@ export default function ChatArea({ messages, streaming, loading, conversationId,
       <div className="scroll-area" style={{ flex: 1, minHeight: 0, paddingTop: 8, overflowY: "auto" }}>
         {messages.length === 0 && !streaming && (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
-            <Empty description="开始聊天吧" />
+            <Empty description={isVideo ? "上传起始画面后，输入提示词开始生成视频" : "开始聊天吧"} />
           </div>
         )}
 
@@ -56,7 +57,7 @@ export default function ChatArea({ messages, streaming, loading, conversationId,
         <div ref={bottomRef} />
       </div>
 
-      <MessageInput onSend={onSend} loading={loading} />
+      <MessageInput onSend={onSend} loading={loading} placeholder={isVideo ? "输入提示词，Enter 发送并开始生成视频..." : undefined} />
     </div>
   );
 }

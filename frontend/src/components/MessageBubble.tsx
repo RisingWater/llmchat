@@ -19,6 +19,16 @@ function parseContent(content: string): { text: string; images: { url: string; a
   return { text: text.trim(), images };
 }
 
+// 解析 content 中的 <video> 标签，返回 { text, videos }
+function parseVideos(content: string): { text: string; videos: string[] } {
+  const videos: string[] = [];
+  const text = content.replace(/<video\s+src="([^"]+)"[^>]*>\s*<\/video>/gi, (_, src) => {
+    videos.push(src);
+    return "";
+  });
+  return { text: text.trim(), videos };
+}
+
 export default function MessageBubble({ message, conversationId }: Props) {
   const isUser = message.role === "user";
   const [genState, setGenState] = useState<{
@@ -30,6 +40,8 @@ export default function MessageBubble({ message, conversationId }: Props) {
   const { message: antMsg } = App.useApp();
 
   const { text, images } = parseContent(message.content);
+  const { text: textNoVideos, videos } = parseVideos(text);
+  const displayText = textNoVideos;
 
   const handleGenerate = async () => {
     setGenState({ loading: true });
@@ -65,7 +77,7 @@ export default function MessageBubble({ message, conversationId }: Props) {
 
       <div style={{ maxWidth: "75%" }}>
         {/* 文本 */}
-        {text && (
+        {displayText && (
           <div
             style={{
               padding: "10px 14px", borderRadius: 12,
@@ -76,10 +88,22 @@ export default function MessageBubble({ message, conversationId }: Props) {
             }}
           >
             <Typography.Text style={{ color: "inherit", fontSize: 15 }}>
-              {text}
+              {displayText}
             </Typography.Text>
           </div>
         )}
+
+        {/* 视频（从 content 解析） */}
+        {videos.map((src, i) => (
+          <div key={i} style={{ marginTop: 6 }}>
+            <video
+              src={src}
+              controls
+              preload="metadata"
+              style={{ maxWidth: "100%", maxHeight: 360, borderRadius: 8, background: "#000" }}
+            />
+          </div>
+        ))}
 
         {/* 已保存的图片（从 content 解析） */}
         {images.map((img, i) => (

@@ -42,6 +42,26 @@ export async function createConversation(): Promise<Conversation> {
   return res.json();
 }
 
+export async function createVideoConversation(
+  file: File,
+  title?: string
+): Promise<Conversation> {
+  const token = localStorage.getItem("token") || "";
+  const fd = new FormData();
+  fd.append("file", file);
+  if (title) fd.append("title", title);
+  const res = await fetch(`${BASE}/conversations/video`, {
+    method: "POST",
+    headers: { Authorization: token ? `Bearer ${token}` : "" },
+    body: fd,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "创建失败" }));
+    throw new Error(err.detail || "创建失败");
+  }
+  return res.json();
+}
+
 export async function getConversation(id: number): Promise<ConversationDetail> {
   const res = await fetch(`${BASE}/conversations/${id}`, { headers: headers() });
   if (!res.ok) throw new Error("获取会话失败");
@@ -158,6 +178,27 @@ export async function generateImage(
       Authorization: token ? `Bearer ${token}` : "",
     },
     body: JSON.stringify({ conversation_id: conversationId, message_id: messageId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "生成失败" }));
+    throw new Error(err.detail || "生成失败");
+  }
+  return res.json();
+}
+
+// ---- 视频生成（图生视频会话）----
+export async function generateVideo(
+  conversationId: number,
+  prompt: string
+): Promise<{ video_url: string; prompt: string }> {
+  const token = localStorage.getItem("token") || "";
+  const res = await fetch(`${BASE}/videos/generate`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: token ? `Bearer ${token}` : "",
+    },
+    body: JSON.stringify({ conversation_id: conversationId, prompt }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: "生成失败" }));

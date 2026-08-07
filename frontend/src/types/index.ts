@@ -1,6 +1,7 @@
 export interface Conversation {
   id: number;
   title: string;
+  conv_type: "chat" | "video";
   system_prompt: string;
   created_at: string;
   updated_at: string;
