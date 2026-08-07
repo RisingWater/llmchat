@@ -1,0 +1,15 @@
+import os
+from dotenv import load_dotenv
+
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).resolve().parent.parent / ".env")
+
+API_KEY = os.getenv("API_KEY", "")
+API_BASE = os.getenv("API_BASE", "https://api.deepseek.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "deepseek-chat")
+LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "admin")
+JWT_SECRET = os.getenv("JWT_SECRET", API_KEY)  # 用 API_KEY 做 JWT 签名密钥
+
+# ComfyUI 图片生成配置
+COMFYUI_BASE = os.getenv("COMFYUI_BASE", "http://127.0.0.1:8188")
+COMFYUI_WORKFLOW = os.getenv("COMFYUI_WORKFLOW", "image_z_image_turbo.json")

@@ -1,0 +1,12 @@
+# secrets
+.env
+
+# runtime data
+chat.db
+output/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
