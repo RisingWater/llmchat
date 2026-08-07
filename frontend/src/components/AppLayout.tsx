@@ -18,6 +18,7 @@ interface Props {
   messages: Message[];
   streaming: string;
   loading: boolean;
+  videoGenerating: boolean;
   onSelectConversation: (id: number) => void;
   onNewConversation: () => void;
   onNewVideoConversation: () => void;
@@ -34,6 +35,7 @@ export default function AppLayout({
   messages,
   streaming,
   loading,
+  videoGenerating,
   onSelectConversation,
   onNewConversation,
   onNewVideoConversation,
@@ -73,6 +75,7 @@ export default function AppLayout({
           messages={messages}
           streaming={streaming}
           loading={loading}
+          videoGenerating={videoGenerating}
           conversationId={currentConversation?.id ?? null}
           isVideo={currentConversation?.conv_type === "video"}
           onSend={onSendMessage}

@@ -18,6 +18,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState("");
   const [loading, setLoading] = useState(false);
+  const [videoGenerating, setVideoGenerating] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
 
   const handleLogin = useCallback(async (password: string) => {
@@ -173,6 +174,7 @@ export default function App() {
       };
       setMessages((prev) => [...prev, userMsg]);
       setLoading(true);
+      setVideoGenerating(true);
 
       try {
         await api.generateVideo(currentId, content);
@@ -189,6 +191,7 @@ export default function App() {
         setMessages((prev) => [...prev, errMsg]);
       } finally {
         setLoading(false);
+        setVideoGenerating(false);
       }
     },
     [currentId, loadConversations]
@@ -237,6 +240,7 @@ export default function App() {
         messages={messages}
         streaming={streaming}
         loading={loading}
+        videoGenerating={videoGenerating}
         onSelectConversation={selectConversation}
         onNewConversation={newConversation}
         onNewVideoConversation={() => setVideoModalOpen(true)}

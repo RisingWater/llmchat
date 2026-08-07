@@ -12,5 +12,7 @@ JWT_SECRET = os.getenv("JWT_SECRET", API_KEY)  # 用 API_KEY 做 JWT 签名密�
 
 # ComfyUI 图片生成配置
 COMFYUI_BASE = os.getenv("COMFYUI_BASE", "http://127.0.0.1:8188")
-# 文生图/图生图（z-image-turbo）工作流；后续其他 workflow 各用独立环境变量
+# 文生图/图生图（z-image-turbo）工作流；其他 workflow 各用独立环境变量
 COMFYUI_ZIMAGE_WORKFLOW = os.getenv("COMFYUI_ZIMAGE_WORKFLOW", "image_z_image_turbo.json")
+# 图生视频（MiniMax H3）工作流
+COMFYUI_MINIMAX_WORKFLOW = os.getenv("COMFYUI_MINIMAX_WORKFLOW", "minimax_h3_i2v_workflow.json")

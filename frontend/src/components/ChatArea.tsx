@@ -1,5 +1,5 @@
 import { useRef, useEffect } from "react";
-import { Empty, Typography } from "antd";
+import { Empty, Typography, Spin } from "antd";
 import type { Message } from "../types";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
@@ -8,12 +8,13 @@ interface Props {
   messages: Message[];
   streaming: string;
   loading: boolean;
+  videoGenerating: boolean;
   conversationId: number | null;
   isVideo: boolean;
   onSend: (content: string) => void;
 }
 
-export default function ChatArea({ messages, streaming, loading, conversationId, isVideo, onSend }: Props) {
+export default function ChatArea({ messages, streaming, loading, videoGenerating, conversationId, isVideo, onSend }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,6 +51,24 @@ export default function ChatArea({ messages, streaming, loading, conversationId,
                 <span style={{ display: "inline-block", width: 2, height: 16,
                   background: "#1677ff", marginLeft: 2, verticalAlign: "text-bottom" }} />
               </Typography.Text>
+            </div>
+          </div>
+        )}
+
+        {videoGenerating && (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 16px" }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "50%", background: "#52c41a",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#fff", fontSize: 18, flexShrink: 0,
+            }}>🤖</div>
+            <div style={{
+              padding: "10px 14px", borderRadius: 12,
+              background: "#fff", boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <Spin size="small" />
+              <Typography.Text style={{ fontSize: 14, color: "#666" }}>正在生成视频，请稍候...</Typography.Text>
             </div>
           </div>
         )}

@@ -1,0 +1,206 @@
+"""
+ComfyUI 视频生成器（MiniMax H3 图生视频）— 输入 prompt + base64 首帧图，输出本地视频路径。
+
+用法:
+    from comfyui_video_gen import ComfyUIVideoGenerator
+
+    gen = ComfyUIVideoGenerator(
+        workflow="minimax_h3_i2v_workflow.json",
+        base_url="http://127.0.0.1:8188",
+    )
+    path = gen.generate("a cat jumping", image_b64)
+    print(path)  # → D:/wangxu/ai/llmchat/output/0001.mp4
+"""
+
+from __future__ import annotations
+
+import base64
+import json
+import time
+import uuid
+from pathlib import Path
+from typing import Optional
+
+import requests
+
+
+class ComfyUIVideoGenerator:
+    """封装 ComfyUI API，输入 prompt + 首帧图（base64）→ 输出视频路径"""
+
+    def __init__(
+        self,
+        workflow: str = "minimax_h3_i2v_workflow.json",
+        base_url: str = "http://127.0.0.1:8188",
+        output_dir: str = "output",
+        timeout: int = 600,
+        poll_interval: float = 2.0,
+    ):
+        """
+        workflow      — 工作流 JSON 文件路径
+        base_url      — ComfyUI 地址
+        output_dir    — 输出视频保存目录
+        timeout       — 最大等待秒数（视频生成较慢，默认 10 分钟）
+        poll_interval — 轮询间隔（秒）
+        """
+        self.base_url = base_url.rstrip("/")
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.timeout = timeout
+        self.poll_interval = poll_interval
+
+        # 加载工作流
+        wf_path = Path(workflow)
+        if not wf_path.exists():
+            raise FileNotFoundError(f"工作流文件不存在: {workflow}")
+        self.workflow = self._load_json(wf_path)
+        self._client_id = str(uuid.uuid4())
+        self._counter = 0  # 生成计数，用于文件名
+
+        # 探测关键节点
+        self._prompt_node = self._find_first("MiniMaxH3ImageToVideo")
+        self._image_node = self._find_first("ETN_LoadImageBase64")
+        self._seed_node = self._find_first("RandomNoise")
+
+    # ============================================================
+    # 公开接口
+    # ============================================================
+    def generate(
+        self,
+        prompt: str,
+        image_b64: str,
+        *,
+        seed: Optional[int] = None,
+    ) -> str:
+        """
+        输入 prompt + base64 首帧图，返回生成的视频路径。
+
+        参数:
+            prompt    — 动作/内容提示词（MiniMax H3 图生视频）
+            image_b64 — 首帧图片的 base64 编码字符串（不带 data URI 前缀）
+            seed      — 随机种子（None=用工作流默认值）
+        """
+        wf = self._copy_workflow()
+        self._counter += 1
+
+        # 首帧图以 data URI 形式写入 ETN_LoadImageBase64 节点
+        if self._image_node:
+            self._set_input(wf, self._image_node, "image", self._to_data_uri(image_b64))
+        # 提示词写入 MiniMaxH3ImageToVideo 节点
+        if self._prompt_node:
+            self._set_input(wf, self._prompt_node, "prompt", prompt)
+        # 种子写入 RandomNoise 节点
+        if seed is not None and self._seed_node:
+            self._set_input(wf, self._seed_node, "noise_seed", seed)
+
+        # 提交 → 等待 → 下载
+        prompt_id = self._queue(wf)
+        history = self._wait(prompt_id)
+        return self._download(history, prompt_id)
+
+    # ============================================================
+    # 内部 — ComfyUI HTTP API
+    # ============================================================
+    def _queue(self, prompt: dict) -> str:
+        resp = requests.post(
+            f"{self.base_url}/prompt",
+            json={"prompt": prompt, "client_id": self._client_id},
+        )
+        resp.raise_for_status()
+        return resp.json()["prompt_id"]
+
+    def _wait(self, prompt_id: str) -> dict:
+        start = time.time()
+        while time.time() - start < self.timeout:
+            resp = requests.get(f"{self.base_url}/history/{prompt_id}")
+            if resp.status_code == 200:
+                data = resp.json().get(prompt_id)
+                if data is not None:
+                    return data
+            time.sleep(self.poll_interval)
+        raise TimeoutError(f"生成超时 ({self.timeout}s)，prompt_id={prompt_id}")
+
+    def _download(self, history: dict, prompt_id: str) -> str:
+        # SaveVideo 的输出在历史记录里可能是 videos / gifs / images，兼容三种
+        files = []
+        prompt_data = history.get(prompt_id, history)
+        for node_output in prompt_data.get("outputs", {}).values():
+            for key in ("videos", "gifs", "images"):
+                for item in node_output.get(key, []):
+                    files.append(item)
+
+        if not files:
+            raise RuntimeError("工作流没有输出视频，请检查工作流是否正确")
+
+        # 只取第一个
+        video = files[0]
+        params = {
+            "filename": video["filename"],
+            "subfolder": video.get("subfolder", ""),
+            "type": video.get("type", "output"),
+        }
+        resp = requests.get(f"{self.base_url}/view", params=params)
+        resp.raise_for_status()
+
+        suffix = Path(video["filename"]).suffix or ".mp4"
+        out_path = self.output_dir / f"{self._counter:04d}{suffix}"
+        out_path.write_bytes(resp.content)
+        return str(out_path.resolve())
+
+    # ============================================================
+    # 内部 — 工作流操作
+    # ============================================================
+    @staticmethod
+    def _load_json(path: Path) -> dict:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def _copy_workflow(self) -> dict:
+        """深拷贝工作流，避免修改原始对象"""
+        return json.loads(json.dumps(self.workflow))
+
+    def _find_first(self, class_type: str, index: int = 0) -> Optional[str]:
+        """找第 index 个 class_type 类型的节点 ID"""
+        matches = [
+            nid for nid, node in self.workflow.items()
+            if isinstance(node, dict) and node.get("class_type") == class_type
+        ]
+        return matches[index] if len(matches) > index else None
+
+    @staticmethod
+    def _set_input(workflow: dict, node_id: str, field: str, value):
+        node = workflow.get(node_id, {})
+        inputs = node.get("inputs", {})
+        if field in inputs:
+            inputs[field] = value
+
+    @staticmethod
+    def _to_data_uri(image_b64: str) -> str:
+        """base64 字符串 → data URI（ETN_LoadImageBase64 可识别）"""
+        if image_b64.startswith("data:"):
+            return image_b64
+        return f"data:image/png;base64,{image_b64}"
+
+
+# ============================================================
+# 命令行入口
+# ============================================================
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="ComfyUI 视频生成器（MiniMax H3 图生视频）")
+    parser.add_argument("--prompt", "-p", required=True, help="动作/内容提示词")
+    parser.add_argument("--image", "-i", required=True, help="首帧图片路径")
+    parser.add_argument("--seed", "-s", type=int)
+    parser.add_argument("--workflow", default="minimax_h3_i2v_workflow.json")
+    parser.add_argument("--base-url", default="http://127.0.0.1:8188")
+    parser.add_argument("--output-dir", default="output")
+    args = parser.parse_args()
+
+    image_b64 = base64.b64encode(Path(args.image).read_bytes()).decode("ascii")
+    gen = ComfyUIVideoGenerator(
+        workflow=args.workflow,
+        base_url=args.base_url,
+        output_dir=args.output_dir,
+    )
+    path = gen.generate(args.prompt, image_b64, seed=args.seed)
+    print(path)
