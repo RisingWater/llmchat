@@ -4,21 +4,24 @@ import { InputNumber, Button, App } from "antd";
 interface Props {
   megapixels: number;
   steps: number;
-  onSave: (megapixels: number, steps: number) => void;
+  duration: number;
+  onSave: (megapixels: number, steps: number, duration: number) => void;
 }
 
-export default function VideoSettingsPanel({ megapixels, steps, onSave }: Props) {
+export default function VideoSettingsPanel({ megapixels, steps, duration, onSave }: Props) {
   const [mp, setMp] = useState(megapixels);
   const [st, setSt] = useState(steps);
+  const [dur, setDur] = useState(duration);
   const { message } = App.useApp();
 
   useEffect(() => {
     setMp(megapixels);
     setSt(steps);
-  }, [megapixels, steps]);
+    setDur(duration);
+  }, [megapixels, steps, duration]);
 
   const handleSave = () => {
-    onSave(mp || 0.4, st || 16);
+    onSave(mp || 0.4, st || 16, dur || 5);
     message.success("已保存");
   };
 
@@ -52,6 +55,19 @@ export default function VideoSettingsPanel({ megapixels, steps, onSave }: Props)
               max={100}
               step={1}
               onChange={(v) => setSt(v ?? 16)}
+              style={{ width: "100%" }}
+            />
+          </div>
+          <div>
+            <div style={{ marginBottom: 4, color: "#999", fontSize: 12 }}>
+              视频时长（秒）
+            </div>
+            <InputNumber
+              value={dur}
+              min={5}
+              max={60}
+              step={1}
+              onChange={(v) => setDur(v ?? 5)}
               style={{ width: "100%" }}
             />
           </div>

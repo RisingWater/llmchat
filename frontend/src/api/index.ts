@@ -75,6 +75,7 @@ export async function updateConversation(
     system_prompt?: string;
     megapixels?: number;
     steps?: number;
+    duration?: number;
   }
 ): Promise<Conversation> {
   const res = await fetch(`${BASE}/conversations/${id}`, {

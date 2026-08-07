@@ -3,7 +3,11 @@ import asyncio
 import base64
 from pathlib import Path
 
-from backend.config import COMFYUI_BASE, COMFYUI_MINIMAX_WORKFLOW
+from backend.config import (
+    COMFYUI_BASE,
+    COMFYUI_FILE_SERVER,
+    COMFYUI_MINIMAX_WORKFLOW,
+)
 
 
 async def generate_video(
@@ -11,22 +15,30 @@ async def generate_video(
     first_frame: bytes,
     megapixels: float | None = None,
     steps: int | None = None,
+    duration: float | None = None,
 ) -> bytes | None:
     """调用 ComfyUI 生成图生视频，返回视频字节。失败返回 None。
 
     first_frame — 首帧图片字节（内部转 base64 传入工作流）
     megapixels  — 目标总像素（百万像素）
     steps       — 采样步数
+    duration    — 视频时长（秒）
     """
     try:
-        return await asyncio.to_thread(_run_comfyui, prompt, first_frame, megapixels, steps)
+        return await asyncio.to_thread(
+            _run_comfyui, prompt, first_frame, megapixels, steps, duration
+        )
     except Exception as e:
         print(f"[VIDEO] 生成失败: {e}", flush=True)
         return None
 
 
 def _run_comfyui(
-    prompt: str, first_frame: bytes, megapixels: float | None, steps: int | None
+    prompt: str,
+    first_frame: bytes,
+    megapixels: float | None,
+    steps: int | None,
+    duration: float | None,
 ) -> bytes:
     import sys
     root = str(Path(__file__).resolve().parent.parent)
@@ -42,9 +54,16 @@ def _run_comfyui(
         workflow=COMFYUI_MINIMAX_WORKFLOW,
         base_url=COMFYUI_BASE,
         output_dir=str(Path(root) / "output"),
+        delete_base=COMFYUI_FILE_SERVER,
     )
     # 生成视频到本地临时路径
-    local_path = gen.generate(prompt, image_b64, megapixels=megapixels, steps=steps)
+    local_path = gen.generate(
+        prompt,
+        image_b64,
+        megapixels=megapixels,
+        steps=steps,
+        duration=duration,
+    )
     # 读入内存
     data = Path(local_path).read_bytes()
     # 删除临时文件

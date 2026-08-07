@@ -111,6 +111,7 @@ async def generate_video(
             input_frame,
             megapixels=conv.megapixels,
             steps=conv.steps,
+            duration=conv.duration,
         )
     except Exception as e:
         assistant_msg.content = f"❌ 视频生成失败: {e}"

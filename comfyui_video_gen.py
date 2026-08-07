@@ -34,6 +34,7 @@ class ComfyUIVideoGenerator:
         output_dir: str = "output",
         timeout: int = 5400,
         poll_interval: float = 2.0,
+        delete_base: Optional[str] = None,
     ):
         """
         workflow      — 工作流 JSON 文件路径
@@ -41,12 +42,14 @@ class ComfyUIVideoGenerator:
         output_dir    — 输出视频保存目录
         timeout       — 最大等待秒数（视频生成较慢，默认 1.5 小时）
         poll_interval — 轮询间隔（秒）
+        delete_base   — 视频文件删除服务地址（None=下载后不删除远端文件）
         """
         self.base_url = base_url.rstrip("/")
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout
         self.poll_interval = poll_interval
+        self.delete_base = delete_base.rstrip("/") if delete_base else None
 
         # 加载工作流
         wf_path = Path(workflow)
@@ -62,6 +65,7 @@ class ComfyUIVideoGenerator:
         self._seed_node = self._find_first("RandomNoise")
         self._resolution_node = self._find_first("ResolutionSelector")
         self._scheduler_node = self._find_first("BasicScheduler")
+        self._duration_node = self._find_duration_node()
 
     # ============================================================
     # 公开接口
@@ -75,6 +79,7 @@ class ComfyUIVideoGenerator:
         aspect_ratio: Optional[str] = None,
         megapixels: Optional[float] = None,
         steps: Optional[int] = None,
+        duration: Optional[float] = None,
     ) -> str:
         """
         输入 prompt + base64 首帧图，返回生成的视频路径。
@@ -86,6 +91,7 @@ class ComfyUIVideoGenerator:
             aspect_ratio — 输出画面比例（None=按图片方向自动选择）
             megapixels   — 目标总像素（百万像素，None=用工作流默认值）
             steps        — 采样步数（None=用工作流默认值）
+            duration     — 视频时长（秒，None=用工作流默认值）
         """
         wf = self._copy_workflow()
         self._counter += 1
@@ -110,6 +116,9 @@ class ComfyUIVideoGenerator:
         # 采样步数
         if steps is not None and self._scheduler_node:
             self._set_input(wf, self._scheduler_node, "steps", steps)
+        # 视频时长（秒）
+        if duration is not None and self._duration_node:
+            self._set_input(wf, self._duration_node, "value", duration)
 
         # 提交 → 等待 → 下载
         prompt_id = self._queue(wf)
@@ -168,7 +177,23 @@ class ComfyUIVideoGenerator:
         suffix = Path(video["filename"]).suffix or ".mp4"
         out_path = self.output_dir / f"{self._counter:04d}{suffix}"
         out_path.write_bytes(resp.content)
+        self._delete_remote(video)
         return str(out_path.resolve())
+
+    def _delete_remote(self, video: dict) -> None:
+        """下载完成后删除 ComfyUI 机器上的原文件（腾磁盘空间，尽力而为）"""
+        if not self.delete_base:
+            return
+        try:
+            resp = requests.delete(
+                f"{self.delete_base}/delete",
+                params={"name": video["filename"]},
+                timeout=10,
+            )
+            if resp.status_code != 200:
+                print(f"[VIDEO] 远端删除失败: {resp.status_code} {resp.text[:200]}", flush=True)
+        except Exception as e:
+            print(f"[VIDEO] 远端删除异常: {e}", flush=True)
 
     # ============================================================
     # 内部 — 工作流操作
@@ -189,6 +214,15 @@ class ComfyUIVideoGenerator:
             if isinstance(node, dict) and node.get("class_type") == class_type
         ]
         return matches[index] if len(matches) > index else None
+
+    def _find_duration_node(self) -> Optional[str]:
+        """找视频时长节点：优先 _meta.title 含 duration 的 PrimitiveFloat，否则第一个 PrimitiveFloat"""
+        for nid, node in self.workflow.items():
+            if isinstance(node, dict) and node.get("class_type") == "PrimitiveFloat":
+                title = (node.get("_meta") or {}).get("title", "")
+                if "duration" in str(title).lower():
+                    return nid
+        return self._find_first("PrimitiveFloat")
 
     @staticmethod
     def _set_input(workflow: dict, node_id: str, field: str, value):

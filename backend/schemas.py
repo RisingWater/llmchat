@@ -22,6 +22,7 @@ class ConversationUpdate(BaseModel):
     system_prompt: str | None = None
     megapixels: float | None = None
     steps: int | None = None
+    duration: int | None = None
 
 
 class ConversationOut(BaseModel):
@@ -31,6 +32,7 @@ class ConversationOut(BaseModel):
     system_prompt: str
     megapixels: float = 0.4
     steps: int = 16
+    duration: int = 5
     created_at: datetime
     updated_at: datetime
 

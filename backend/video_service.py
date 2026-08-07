@@ -47,6 +47,7 @@ async def generate_video_file(
     frame_path: str | Path,
     megapixels: float | None = None,
     steps: int | None = None,
+    duration: float | None = None,
 ) -> tuple[str, str]:
     """MiniMax H3 图生视频：生成一段新视频并截取最后一帧
 
@@ -56,7 +57,9 @@ async def generate_video_file(
 
     ensure_dirs()
     frame_bytes = Path(frame_path).read_bytes()
-    video_bytes = await generate_video(prompt, frame_bytes, megapixels=megapixels, steps=steps)
+    video_bytes = await generate_video(
+        prompt, frame_bytes, megapixels=megapixels, steps=steps, duration=duration
+    )
     if not video_bytes:
         raise RuntimeError("视频生成失败（ComfyUI 未返回视频数据）")
 

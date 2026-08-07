@@ -104,6 +104,8 @@ def update_conversation(
         conv.megapixels = body.megapixels
     if body.steps is not None:
         conv.steps = body.steps
+    if body.duration is not None:
+        conv.duration = body.duration
     db.commit()
     db.refresh(conv)
     return conv

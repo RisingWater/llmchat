@@ -27,7 +27,7 @@ interface Props {
   onClearAll: () => void;
   onSendMessage: (content: string) => void;
   onUpdateSystemPrompt: (prompt: string) => void;
-  onUpdateVideoSettings: (megapixels: number, steps: number) => void;
+  onUpdateVideoSettings: (megapixels: number, steps: number, duration: number) => void;
   onLogout: () => void;
 }
 
@@ -109,7 +109,8 @@ export default function AppLayout({
           <VideoSettingsPanel
             megapixels={currentConversation?.megapixels ?? 0.4}
             steps={currentConversation?.steps ?? 16}
-            onSave={(mp, st) => { onUpdateVideoSettings(mp, st); setSettingsOpen(false); }}
+            duration={currentConversation?.duration ?? 5}
+            onSave={(mp, st, dur) => { onUpdateVideoSettings(mp, st, dur); setSettingsOpen(false); }}
           />
         ) : (
           <SettingsPanel

@@ -40,4 +40,6 @@ def init_db():
                        "megapixels FLOAT DEFAULT 0.4")
         _ensure_column(conn, "conversations", "steps",
                        "steps INTEGER DEFAULT 16")
+        _ensure_column(conn, "conversations", "duration",
+                       "duration INTEGER DEFAULT 5")
         conn.commit()

@@ -17,6 +17,18 @@ COMFYUI_ZIMAGE_WORKFLOW = os.getenv("COMFYUI_ZIMAGE_WORKFLOW", "image_z_image_tu
 # 图生视频（MiniMax H3）工作流
 COMFYUI_MINIMAX_WORKFLOW = os.getenv("COMFYUI_MINIMAX_WORKFLOW", "minimax_h3_i2v_workflow.json")
 
+
+def _video_file_server_base() -> str:
+    """ComfyUI 同机的视频文件服务（file_server.py，8187 端口），从 COMFYUI_BASE 推导 host"""
+    from urllib.parse import urlparse
+
+    host = urlparse(COMFYUI_BASE).hostname or "127.0.0.1"
+    return f"http://{host}:8187"
+
+
+# 视频下载完成后，删除 ComfyUI 机器上对应的文件（腾磁盘空间）；空则跳过
+COMFYUI_FILE_SERVER = os.getenv("COMFYUI_FILE_SERVER", _video_file_server_base())
+
 # 微信通知（NAS 微信网关；WECHAT_WHO 为空则不发送）
 WECHAT_SEND_URL = os.getenv("WECHAT_SEND_URL", "http://127.0.0.1:9020")
 WECHAT_WHO = os.getenv("WECHAT_WHO", "")

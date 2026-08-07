@@ -223,11 +223,13 @@ export default function App() {
   );
 
   const updateVideoSettings = useCallback(
-    async (megapixels: number, steps: number) => {
+    async (megapixels: number, steps: number, duration: number) => {
       if (!currentId) return;
-      await api.updateConversation(currentId, { megapixels, steps });
+      await api.updateConversation(currentId, { megapixels, steps, duration });
       setConversations((prev) =>
-        prev.map((c) => (c.id === currentId ? { ...c, megapixels, steps } : c))
+        prev.map((c) =>
+          c.id === currentId ? { ...c, megapixels, steps, duration } : c
+        )
       );
     },
     [currentId]

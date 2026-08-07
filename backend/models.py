@@ -19,6 +19,7 @@ class Conversation(Base):
     # 图生视频生成参数（可在前端设置）
     megapixels = Column(Float, default=0.4)
     steps = Column(Integer, default=16)
+    duration = Column(Integer, default=5)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
