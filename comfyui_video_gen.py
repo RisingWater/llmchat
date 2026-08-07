@@ -82,9 +82,10 @@ class ComfyUIVideoGenerator:
         wf = self._copy_workflow()
         self._counter += 1
 
-        # 首帧图以 data URI 形式写入 ETN_LoadImageBase64 节点
+        # 首帧图（原始 base64）直接写入 ETN_LoadImageBase64 节点
+        # 注意：该节点内部 base64.b64decode(image)，传入 data URI 会报 Incorrect padding
         if self._image_node:
-            self._set_input(wf, self._image_node, "image", self._to_data_uri(image_b64))
+            self._set_input(wf, self._image_node, "image", image_b64)
         # 提示词写入 MiniMaxH3ImageToVideo 节点
         if self._prompt_node:
             self._set_input(wf, self._prompt_node, "prompt", prompt)
@@ -172,13 +173,6 @@ class ComfyUIVideoGenerator:
         inputs = node.get("inputs", {})
         if field in inputs:
             inputs[field] = value
-
-    @staticmethod
-    def _to_data_uri(image_b64: str) -> str:
-        """base64 字符串 → data URI（ETN_LoadImageBase64 可识别）"""
-        if image_b64.startswith("data:"):
-            return image_b64
-        return f"data:image/png;base64,{image_b64}"
 
 
 # ============================================================
