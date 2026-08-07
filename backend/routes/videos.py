@@ -2,7 +2,7 @@
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from backend.video_service import (
     generate_video_file,
     merge_videos,
 )
+from backend.wechat_notify import notify_video_done
 
 router = APIRouter(prefix="/api/videos", tags=["videos"])
 
@@ -65,6 +66,7 @@ async def generate_video(
     body: VideoGenerateRequest,
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
+    tasks: BackgroundTasks = BackgroundTasks(),
 ):
     """生成一段视频（图生视频）
 
@@ -137,5 +139,8 @@ async def generate_video(
 
     assistant_msg.content = f'<video src="/api/videos/{gen_video.id}"></video>'
     db.commit()
+
+    # 6. 视频完成，后台发微信通知（不阻塞响应）
+    tasks.add_task(notify_video_done, body.prompt, conv.title)
 
     return VideoGenerateResponse(video_url=f"/api/videos/{gen_video.id}", prompt=body.prompt)

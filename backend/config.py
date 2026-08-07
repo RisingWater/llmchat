@@ -16,3 +16,8 @@ COMFYUI_BASE = os.getenv("COMFYUI_BASE", "http://127.0.0.1:8188")
 COMFYUI_ZIMAGE_WORKFLOW = os.getenv("COMFYUI_ZIMAGE_WORKFLOW", "image_z_image_turbo.json")
 # 图生视频（MiniMax H3）工作流
 COMFYUI_MINIMAX_WORKFLOW = os.getenv("COMFYUI_MINIMAX_WORKFLOW", "minimax_h3_i2v_workflow.json")
+
+# 微信通知（NAS 微信网关；WECHAT_WHO 为空则不发送）
+WECHAT_SEND_URL = os.getenv("WECHAT_SEND_URL", "http://127.0.0.1:9020")
+WECHAT_WHO = os.getenv("WECHAT_WHO", "")
+WECHAT_WXNAME = os.getenv("WECHAT_WXNAME", "")
