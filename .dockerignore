@@ -1,0 +1,11 @@
+# 构建上下文忽略项：避免把运行时数据、缓存和密钥发到构建环境
+.env
+.git
+.gitignore
+.venv
+venv
+__pycache__
+chat.db
+output
+frontend/node_modules
+frontend/dist

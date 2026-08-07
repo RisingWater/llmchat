@@ -2,7 +2,7 @@
 import asyncio
 from pathlib import Path
 
-from backend.config import COMFYUI_BASE, COMFYUI_WORKFLOW
+from backend.config import COMFYUI_BASE, COMFYUI_ZIMAGE_WORKFLOW
 
 
 async def generate_image(prompt: str) -> bytes | None:
@@ -23,7 +23,7 @@ def _run_comfyui(prompt: str) -> bytes:
     from comfyui_gen import ComfyUIImageGenerator
 
     gen = ComfyUIImageGenerator(
-        workflow=COMFYUI_WORKFLOW,
+        workflow=COMFYUI_ZIMAGE_WORKFLOW,
         base_url=COMFYUI_BASE,
         output_dir=str(Path(root) / "output"),
     )
