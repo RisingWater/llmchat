@@ -32,14 +32,14 @@ class ComfyUIVideoGenerator:
         workflow: str = "minimax_h3_i2v_workflow.json",
         base_url: str = "http://127.0.0.1:8188",
         output_dir: str = "output",
-        timeout: int = 600,
+        timeout: int = 5400,
         poll_interval: float = 2.0,
     ):
         """
         workflow      — 工作流 JSON 文件路径
         base_url      — ComfyUI 地址
         output_dir    — 输出视频保存目录
-        timeout       — 最大等待秒数（视频生成较慢，默认 10 分钟）
+        timeout       — 最大等待秒数（视频生成较慢，默认 1.5 小时）
         poll_interval — 轮询间隔（秒）
         """
         self.base_url = base_url.rstrip("/")
@@ -60,6 +60,7 @@ class ComfyUIVideoGenerator:
         self._prompt_node = self._find_first("MiniMaxH3ImageToVideo")
         self._image_node = self._find_first("ETN_LoadImageBase64")
         self._seed_node = self._find_first("RandomNoise")
+        self._resolution_node = self._find_first("ResolutionSelector")
 
     # ============================================================
     # 公开接口
@@ -70,14 +71,16 @@ class ComfyUIVideoGenerator:
         image_b64: str,
         *,
         seed: Optional[int] = None,
+        aspect_ratio: Optional[str] = None,
     ) -> str:
         """
         输入 prompt + base64 首帧图，返回生成的视频路径。
 
         参数:
-            prompt    — 动作/内容提示词（MiniMax H3 图生视频）
-            image_b64 — 首帧图片的 base64 编码字符串（不带 data URI 前缀）
-            seed      — 随机种子（None=用工作流默认值）
+            prompt       — 动作/内容提示词（MiniMax H3 图生视频）
+            image_b64    — 首帧图片的 base64 编码字符串（不带 data URI 前缀）
+            seed         — 随机种子（None=用工作流默认值）
+            aspect_ratio — 输出画面比例（None=按图片方向自动选择）
         """
         wf = self._copy_workflow()
         self._counter += 1
@@ -92,6 +95,11 @@ class ComfyUIVideoGenerator:
         # 种子写入 RandomNoise 节点
         if seed is not None and self._seed_node:
             self._set_input(wf, self._seed_node, "noise_seed", seed)
+        # 输出比例：未指定则按图片方向选择（竖=9:16，横=16:9，方=1:1）
+        if self._resolution_node:
+            ratio = aspect_ratio or self._detect_aspect_ratio(image_b64)
+            if ratio:
+                self._set_input(wf, self._resolution_node, "aspect_ratio", ratio)
 
         # 提交 → 等待 → 下载
         prompt_id = self._queue(wf)
@@ -104,7 +112,12 @@ class ComfyUIVideoGenerator:
     def _queue(self, prompt: dict) -> str:
         resp = requests.post(
             f"{self.base_url}/prompt",
-            json={"prompt": prompt, "client_id": self._client_id},
+            # preview_method=no_preview：跳过 latent 预览解码/编码（无人接收时纯浪费）
+            json={
+                "prompt": prompt,
+                "client_id": self._client_id,
+                "extra_data": {"preview_method": "no_preview"},
+            },
         )
         resp.raise_for_status()
         return resp.json()["prompt_id"]
@@ -173,6 +186,50 @@ class ComfyUIVideoGenerator:
         inputs = node.get("inputs", {})
         if field in inputs:
             inputs[field] = value
+
+    @staticmethod
+    def _detect_aspect_ratio(image_b64: str) -> Optional[str]:
+        """按图片宽高方向返回 ResolutionSelector 的 aspect_ratio 值"""
+
+        def image_size(data: bytes) -> Optional[tuple[int, int]]:
+            # PNG（IHDR：偏移 16 起 big-endian 宽高）
+            if data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) >= 24:
+                return (
+                    int.from_bytes(data[16:20], "big"),
+                    int.from_bytes(data[20:24], "big"),
+                )
+            # JPEG（扫描 SOF0/SOF1/SOF2 等标记读宽高）
+            if data[:2] == b"\xff\xd8":
+                i, n = 2, len(data)
+                sof = {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}
+                while i + 9 < n:
+                    if data[i] != 0xFF:
+                        i += 1
+                        continue
+                    marker = data[i + 1]
+                    if marker in sof:
+                        return (
+                            int.from_bytes(data[i + 7:i + 9], "big"),
+                            int.from_bytes(data[i + 5:i + 7], "big"),
+                        )
+                    if marker in (0xD8, 0x01) or 0xD0 <= marker <= 0xD7:
+                        i += 2
+                    else:
+                        i += 2 + int.from_bytes(data[i + 2:i + 4], "big")
+            return None
+
+        try:
+            size = image_size(base64.b64decode(image_b64))
+        except Exception:
+            size = None
+        if not size:
+            return None
+        w, h = size
+        if h > w:
+            return "9:16 (Portrait Widescreen)"
+        if w > h:
+            return "16:9 (Widescreen)"
+        return "1:1 (Square)"
 
 
 # ============================================================
