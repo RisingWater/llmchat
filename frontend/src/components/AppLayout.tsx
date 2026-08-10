@@ -27,7 +27,8 @@ interface Props {
   onClearAll: () => void;
   onSendMessage: (content: string) => void;
   onUpdateSystemPrompt: (prompt: string) => void;
-  onUpdateVideoSettings: (megapixels: number, steps: number, duration: number) => void;
+  onUpdateVideoSettings: (megapixels: number, steps: number, duration: number, keepAudio: boolean) => void;
+  onUndoStep: () => void;
   onLogout: () => void;
 }
 
@@ -46,6 +47,7 @@ export default function AppLayout({
   onSendMessage,
   onUpdateSystemPrompt,
   onUpdateVideoSettings,
+  onUndoStep,
   onLogout,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -82,6 +84,7 @@ export default function AppLayout({
           conversationId={currentConversation?.id ?? null}
           isVideo={currentConversation?.conv_type === "video"}
           onSend={onSendMessage}
+          onUndoStep={onUndoStep}
         />
       </Content>
 
@@ -107,10 +110,11 @@ export default function AppLayout({
       >
         {currentConversation?.conv_type === "video" ? (
           <VideoSettingsPanel
-            megapixels={currentConversation?.megapixels ?? 0.4}
-            steps={currentConversation?.steps ?? 16}
+            megapixels={currentConversation?.megapixels ?? 0.8}
+            steps={currentConversation?.steps ?? 8}
             duration={currentConversation?.duration ?? 5}
-            onSave={(mp, st, dur) => { onUpdateVideoSettings(mp, st, dur); setSettingsOpen(false); }}
+            keepAudio={currentConversation?.keep_audio ?? false}
+            onSave={(mp, st, dur, ka) => { onUpdateVideoSettings(mp, st, dur, ka); setSettingsOpen(false); }}
           />
         ) : (
           <SettingsPanel

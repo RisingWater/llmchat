@@ -223,17 +223,39 @@ export default function App() {
   );
 
   const updateVideoSettings = useCallback(
-    async (megapixels: number, steps: number, duration: number) => {
+    async (megapixels: number, steps: number, duration: number, keepAudio: boolean) => {
       if (!currentId) return;
-      await api.updateConversation(currentId, { megapixels, steps, duration });
+      await api.updateConversation(currentId, { megapixels, steps, duration, keep_audio: keepAudio });
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === currentId ? { ...c, megapixels, steps, duration } : c
+          c.id === currentId ? { ...c, megapixels, steps, duration, keep_audio: keepAudio } : c
         )
       );
     },
     [currentId]
   );
+
+  // 回到上一步：删除最新片段，重新加载消息
+  const handleUndoStep = useCallback(async () => {
+    if (!currentId) return;
+    setLoading(true);
+    try {
+      await api.undoVideoStep(currentId);
+      const detail = await api.getConversation(currentId);
+      setMessages(detail.messages);
+      loadConversations().then(setConversations);
+    } catch (err: any) {
+      const errMsg: Message = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: `❌ ${err.message || "回退失败"}`,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentId, loadConversations]);
 
   const currentConv = conversations.find((c) => c.id === currentId) || null;
 
@@ -262,6 +284,7 @@ export default function App() {
         onSendMessage={handleSend}
         onUpdateSystemPrompt={updateSystemPrompt}
         onUpdateVideoSettings={updateVideoSettings}
+        onUndoStep={handleUndoStep}
         onLogout={handleLogout}
       />
       <VideoConversationModal

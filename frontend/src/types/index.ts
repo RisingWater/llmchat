@@ -6,6 +6,7 @@ export interface Conversation {
   megapixels: number;
   steps: number;
   duration: number;
+  keep_audio: boolean;
   created_at: string;
   updated_at: string;
 }

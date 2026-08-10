@@ -1,29 +1,50 @@
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Input, Button } from "antd";
-import { SendOutlined } from "@ant-design/icons";
+import { SendOutlined, HighlightOutlined } from "@ant-design/icons";
 
 interface Props {
-  onSend: (content: string) => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSend: () => void;
   loading: boolean;
   placeholder?: string;
+  // 图生视频模式：显示"润色"按钮，回车触发润色而非直接发送
+  polishable?: boolean;
+  onPolish?: () => void;
+  polishLoading?: boolean;
 }
 
-export default function MessageInput({ onSend, loading, placeholder }: Props) {
-  const [value, setValue] = useState("");
+export default function MessageInput({
+  value,
+  onChange,
+  onSend,
+  loading,
+  placeholder,
+  polishable,
+  onPolish,
+  polishLoading,
+}: Props) {
   const inputRef = useRef<any>(null);
 
-  // 发送后自动聚焦
+  // 发送/润色完成后自动聚焦
   useEffect(() => {
-    if (!loading && inputRef.current) {
+    if (!loading && !polishLoading && inputRef.current) {
       inputRef.current.focus();
     }
-  }, [loading]);
+  }, [loading, polishLoading]);
 
   const handleSend = () => {
-    const text = value.trim();
-    if (!text || loading) return;
-    onSend(text);
-    setValue("");
+    if (!value.trim() || loading) return;
+    onSend();
+  };
+
+  const handleEnter = () => {
+    if (!value.trim() || loading) return;
+    if (polishable) {
+      onPolish?.();
+    } else {
+      onSend();
+    }
   };
 
   return (
@@ -41,11 +62,11 @@ export default function MessageInput({ onSend, loading, placeholder }: Props) {
       <Input.TextArea
         ref={inputRef}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         onPressEnter={(e) => {
           if (!e.shiftKey) {
             e.preventDefault();
-            handleSend();
+            handleEnter();
           }
         }}
         placeholder={placeholder || "输入消息... (Enter 发送, Shift+Enter 换行)"}
@@ -53,15 +74,38 @@ export default function MessageInput({ onSend, loading, placeholder }: Props) {
         style={{ flex: 1, borderRadius: 20, padding: "6px 12px" }}
         disabled={loading}
       />
-      <Button
-        type="primary"
-        shape="circle"
-        icon={<SendOutlined />}
-        onClick={handleSend}
-        loading={loading}
-        disabled={!value.trim()}
-        style={{ flexShrink: 0 }}
-      />
+      {polishable && (
+        <Button
+          icon={<HighlightOutlined />}
+          onClick={onPolish}
+          loading={polishLoading}
+          disabled={!value.trim()}
+          style={{ flexShrink: 0 }}
+        >
+          润色
+        </Button>
+      )}
+      {polishable ? (
+        <Button
+          type="primary"
+          onClick={handleSend}
+          loading={loading}
+          disabled={!value.trim()}
+          style={{ flexShrink: 0 }}
+        >
+          开始制作
+        </Button>
+      ) : (
+        <Button
+          type="primary"
+          shape="circle"
+          icon={<SendOutlined />}
+          onClick={handleSend}
+          loading={loading}
+          disabled={!value.trim()}
+          style={{ flexShrink: 0 }}
+        />
+      )}
     </div>
   );
 }

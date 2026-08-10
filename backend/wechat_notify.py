@@ -34,11 +34,7 @@ def send_wechat(msg: str) -> bool:
         return False
 
 
-def notify_video_done(prompt: str, title: str = "") -> bool:
-    """视频完成通知"""
-    snippet = (prompt or "").strip().replace("\n", " ")
-    if len(snippet) > 30:
-        snippet = snippet[:30] + "..."
-    head = f"「{title}」" if title else ""
-    msg = f"🎬 视频已生成完成{head}\n提示词：{snippet or '（无）'}"
+def notify_video_done(title: str = "") -> bool:
+    """视频完成通知（只发会话名，不含提示词）"""
+    msg = f"🎬 视频已生成完成「{title}」" if title else "🎬 视频已生成完成"
     return send_wechat(msg)

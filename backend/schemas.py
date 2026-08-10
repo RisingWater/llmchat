@@ -23,6 +23,7 @@ class ConversationUpdate(BaseModel):
     megapixels: float | None = None
     steps: int | None = None
     duration: int | None = None
+    keep_audio: bool | None = None
 
 
 class ConversationOut(BaseModel):
@@ -30,9 +31,10 @@ class ConversationOut(BaseModel):
     title: str
     conv_type: str
     system_prompt: str
-    megapixels: float = 0.4
-    steps: int = 16
+    megapixels: float = 0.8
+    steps: int = 8
     duration: int = 5
+    keep_audio: bool = False
     created_at: datetime
     updated_at: datetime
 

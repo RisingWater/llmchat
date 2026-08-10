@@ -76,6 +76,7 @@ export async function updateConversation(
     megapixels?: number;
     steps?: number;
     duration?: number;
+    keep_audio?: boolean;
   }
 ): Promise<Conversation> {
   const res = await fetch(`${BASE}/conversations/${id}`, {
@@ -192,6 +193,24 @@ export async function generateImage(
   return res.json();
 }
 
+// ---- 视频提示词润色（DeepSeek，中文）----
+export async function polishVideoPrompt(
+  conversationId: number,
+  prompt: string
+): Promise<string> {
+  const res = await fetch(`${BASE}/videos/polish`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ conversation_id: conversationId, prompt }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "润色失败" }));
+    throw new Error(err.detail || "润色失败");
+  }
+  const data = await res.json();
+  return data.prompt;
+}
+
 // ---- 视频生成（图生视频会话）----
 export async function generateVideo(
   conversationId: number,
@@ -211,4 +230,22 @@ export async function generateVideo(
     throw new Error(err.detail || "生成失败");
   }
   return res.json();
+}
+
+// ---- 视频回退上一步 ----
+export async function undoVideoStep(conversationId: number): Promise<void> {
+  const res = await fetch(`${BASE}/videos/undo`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ conversation_id: conversationId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "回退失败" }));
+    throw new Error(err.detail || "回退失败");
+  }
+}
+
+// ---- 会话成片地址 ----
+export function mergedVideoUrl(conversationId: number): string {
+  return `/api/videos/merged/${conversationId}`;
 }

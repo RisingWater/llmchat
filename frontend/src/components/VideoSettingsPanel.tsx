@@ -1,27 +1,30 @@
 import { useState, useEffect } from "react";
-import { InputNumber, Button, App } from "antd";
+import { InputNumber, Button, Switch, App } from "antd";
 
 interface Props {
   megapixels: number;
   steps: number;
   duration: number;
-  onSave: (megapixels: number, steps: number, duration: number) => void;
+  keepAudio: boolean;
+  onSave: (megapixels: number, steps: number, duration: number, keepAudio: boolean) => void;
 }
 
-export default function VideoSettingsPanel({ megapixels, steps, duration, onSave }: Props) {
+export default function VideoSettingsPanel({ megapixels, steps, duration, keepAudio, onSave }: Props) {
   const [mp, setMp] = useState(megapixels);
   const [st, setSt] = useState(steps);
   const [dur, setDur] = useState(duration);
+  const [ka, setKa] = useState(keepAudio);
   const { message } = App.useApp();
 
   useEffect(() => {
     setMp(megapixels);
     setSt(steps);
     setDur(duration);
-  }, [megapixels, steps, duration]);
+    setKa(keepAudio);
+  }, [megapixels, steps, duration, keepAudio]);
 
   const handleSave = () => {
-    onSave(mp || 0.4, st || 16, dur || 5);
+    onSave(mp || 0.8, st || 8, dur || 5, ka);
     message.success("已保存");
   };
 
@@ -41,7 +44,7 @@ export default function VideoSettingsPanel({ megapixels, steps, duration, onSave
               min={0.1}
               max={16}
               step={0.1}
-              onChange={(v) => setMp(v ?? 0.4)}
+              onChange={(v) => setMp(v ?? 0.8)}
               style={{ width: "100%" }}
             />
           </div>
@@ -54,7 +57,7 @@ export default function VideoSettingsPanel({ megapixels, steps, duration, onSave
               min={1}
               max={100}
               step={1}
-              onChange={(v) => setSt(v ?? 16)}
+              onChange={(v) => setSt(v ?? 8)}
               style={{ width: "100%" }}
             />
           </div>
@@ -70,6 +73,15 @@ export default function VideoSettingsPanel({ megapixels, steps, duration, onSave
               onChange={(v) => setDur(v ?? 5)}
               style={{ width: "100%" }}
             />
+          </div>
+          <div
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 12px", background: "#fafafa", borderRadius: 8,
+            }}
+          >
+            <span style={{ color: "#666", fontSize: 13 }}>保留音频</span>
+            <Switch checked={ka} onChange={setKa} size="small" />
           </div>
         </div>
       </div>

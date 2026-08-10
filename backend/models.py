@@ -17,9 +17,11 @@ class Conversation(Base):
     last_frame_path = Column(String(500), nullable=True)
     merged_video_path = Column(String(500), nullable=True)
     # 图生视频生成参数（可在前端设置）
-    megapixels = Column(Float, default=0.4)
-    steps = Column(Integer, default=16)
+    megapixels = Column(Float, default=0.8)
+    steps = Column(Integer, default=8)
     duration = Column(Integer, default=5)
+    # 是否保留视频音轨（0=不保留，存盘前去音轨）
+    keep_audio = Column(Integer, default=0)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))
@@ -65,7 +67,7 @@ class GeneratedVideo(Base):
     conversation_id = Column(Integer, ForeignKey("conversations.id"), nullable=False)
     message_id = Column(Integer, ForeignKey("messages.id"), nullable=False)
     prompt = Column(Text, default="")
-    # 视频文件路径（相对 output/videos/ 的文件名）
+    # 视频文件名（相对会话输出目录 output/{id}_{标题}/videos/）
     filename = Column(String(500), nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 

@@ -11,6 +11,7 @@ from backend.schemas import (
     ConversationOut,
     ConversationUpdate,
 )
+from backend.video_service import mark_conversation_deleted
 
 router = APIRouter(prefix="/api/conversations", tags=["conversations"])
 
@@ -106,6 +107,8 @@ def update_conversation(
         conv.steps = body.steps
     if body.duration is not None:
         conv.duration = body.duration
+    if body.keep_audio is not None:
+        conv.keep_audio = int(body.keep_audio)
     db.commit()
     db.refresh(conv)
     return conv
@@ -135,6 +138,8 @@ def delete_conversation(conv_id: int, db: Session = Depends(get_db), _=Depends(g
     conv = db.query(Conversation).get(conv_id)
     if not conv:
         raise HTTPException(404, "会话不存在")
+    # 输出目录改名为 xxx_delete（存在则 +1/+2...），保留文件便于恢复
+    mark_conversation_deleted(conv.id, conv.title)
     db.delete(conv)
     db.commit()
     return {"ok": True}
