@@ -5,6 +5,7 @@ import {
   MessageOutlined,
   ClearOutlined,
   VideoCameraOutlined,
+  BranchesOutlined,
 } from "@ant-design/icons";
 import type { Conversation } from "../types";
 
@@ -78,6 +79,8 @@ export default function ConversationList({
               avatar={
                 item.conv_type === "video" ? (
                   <VideoCameraOutlined style={{ fontSize: 18, color: "#722ed1" }} />
+                ) : item.parent_conversation_id ? (
+                  <BranchesOutlined style={{ fontSize: 18, color: "#1677ff" }} />
                 ) : (
                   <MessageOutlined style={{ fontSize: 18, color: "#999" }} />
                 )

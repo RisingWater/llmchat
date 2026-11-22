@@ -1,12 +1,21 @@
 import { useState } from "react";
-import { Typography, Button, Image, Spin, App } from "antd";
-import { UserOutlined, RobotOutlined, CameraOutlined, DownOutlined, RightOutlined } from "@ant-design/icons";
+import { Typography, Button, Image, Spin, App, Tooltip } from "antd";
+import {
+  UserOutlined,
+  RobotOutlined,
+  CameraOutlined,
+  DownOutlined,
+  RightOutlined,
+  BranchesOutlined,
+} from "@ant-design/icons";
 import type { Message } from "../types";
 import * as api from "../api";
 
 interface Props {
   message: Message;
   conversationId: number;
+  forkable?: boolean;
+  onFork?: (messageId: number) => Promise<void>;
 }
 
 // 解析 content 中的图片 markdown，返回 { text, images }
@@ -29,13 +38,14 @@ function parseVideos(content: string): { text: string; videos: string[] } {
   return { text: text.trim(), videos };
 }
 
-export default function MessageBubble({ message, conversationId }: Props) {
+export default function MessageBubble({ message, conversationId, forkable, onFork }: Props) {
   const isUser = message.role === "user";
   const [genState, setGenState] = useState<{
     loading: boolean;
     imageUrl?: string;
     prompt?: string;
   }>({ loading: false });
+  const [forking, setForking] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const { message: antMsg } = App.useApp();
 
@@ -51,6 +61,16 @@ export default function MessageBubble({ message, conversationId }: Props) {
     } catch (err: any) {
       setGenState({ loading: false });
       antMsg.error(err.message || "生成失败");
+    }
+  };
+
+  const handleFork = async () => {
+    if (!onFork || forking) return;
+    setForking(true);
+    try {
+      await onFork(message.id);
+    } finally {
+      setForking(false);
     }
   };
 
@@ -194,6 +214,21 @@ export default function MessageBubble({ message, conversationId }: Props) {
                   重新生成
                 </Button>
               </div>
+            )}
+
+            {forkable && (
+              <Tooltip title="复制这条回答及之前的对话，开一个新会话继续">
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<BranchesOutlined />}
+                  loading={forking}
+                  onClick={handleFork}
+                  style={{ color: "#999", fontSize: 12, marginTop: 4 }}
+                >
+                  从这里分叉
+                </Button>
+              </Tooltip>
             )}
           </div>
         )}

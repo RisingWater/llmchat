@@ -44,4 +44,10 @@ def init_db():
                        "duration INTEGER DEFAULT 5")
         _ensure_column(conn, "conversations", "keep_audio",
                        "keep_audio INTEGER DEFAULT 0")
+        _ensure_column(conn, "conversations", "parent_conversation_id",
+                       "parent_conversation_id INTEGER")
+        _ensure_column(conn, "conversations", "fork_from_message_id",
+                       "fork_from_message_id INTEGER")
+        _ensure_column(conn, "conversations", "model",
+                       "model VARCHAR(40) DEFAULT 'deepseek'")
         conn.commit()

@@ -50,7 +50,7 @@ async def chat(
         full_text: list[str] = []
 
         try:
-            async for event in stream_chat(api_messages):
+            async for event in stream_chat(api_messages, conv.model):
                 if event["type"] == "content":
                     full_text.append(event["content"])
                     yield f"data: {json.dumps({'content': event['content']})}\n\n"
