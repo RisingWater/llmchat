@@ -4,16 +4,15 @@
 set -e
 cd "$(dirname "$0")/.."
 
-PORT="${PORT:-8000}"
+PORT="${PORT:-3210}"
 
 # 同名容器已存在则先删除
-docker rm -f llmchat 2>/dev/null || true
+docker rm -f llmc 2>/dev/null || true
 
-docker run -d \
-    --name llmchat \
+docker run -it -d \
+    --name llmc \
     -p "${PORT}:8000" \
     -v "$(pwd):/workdir" \
-    --restart unless-stopped \
     llmchat:latest
 
 echo "容器已启动：http://127.0.0.1:${PORT}"

@@ -11,7 +11,7 @@ LOGIN_PASSWORD = os.getenv("LOGIN_PASSWORD", "admin")
 JWT_SECRET = os.getenv("JWT_SECRET", API_KEY)  # 用 API_KEY 做 JWT 签名密钥
 
 # ComfyUI 图片生成配置
-COMFYUI_BASE = os.getenv("COMFYUI_BASE", "http://127.0.0.1:8188")
+COMFYUI_BASE = os.getenv("COMFYUI_BASE", "http://192.168.1.181:8188")
 # 文生图/图生图（z-image-turbo）工作流；其他 workflow 各用独立环境变量
 COMFYUI_ZIMAGE_WORKFLOW = os.getenv("COMFYUI_ZIMAGE_WORKFLOW", "image_z_image_turbo.json")
 # 图生视频（MiniMax H3）工作流

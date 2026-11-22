@@ -6,11 +6,11 @@ set -e
 echo "[start] 1/5 拉取最新代码..."
 cd /workdir
 # 部署机器代码可能不是最新，先更新（拉取失败不阻塞启动）
-if GIT_TERMINAL_PROMPT=0 git pull --ff-only; then
-    echo "[start] 代码已更新"
-else
-    echo "[start] 警告：git pull 失败，使用现有代码继续启动"
-fi
+#if GIT_TERMINAL_PROMPT=0 git pull --ff-only; then
+#    echo "[start] 代码已更新"
+#else
+#    echo "[start] 警告：git pull 失败，使用现有代码继续启动"
+#fi
 
 echo "[start] 2/5 创建 Python 虚拟环境并安装依赖..."
 cd /workdir
