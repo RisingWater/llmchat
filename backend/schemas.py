@@ -15,11 +15,13 @@ class LoginResponse(BaseModel):
 class ConversationCreate(BaseModel):
     title: str = "New Chat"
     system_prompt: str = "You are a helpful assistant."
+    model: str = "deepseek"
 
 
 class ConversationUpdate(BaseModel):
     title: str | None = None
     system_prompt: str | None = None
+    model: str | None = None
     megapixels: float | None = None
     steps: int | None = None
     duration: int | None = None
@@ -31,6 +33,7 @@ class ConversationOut(BaseModel):
     title: str
     conv_type: str
     system_prompt: str
+    model: str = "deepseek"
     megapixels: float = 0.8
     steps: int = 8
     duration: int = 5

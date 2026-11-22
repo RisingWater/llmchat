@@ -76,7 +76,7 @@ async def generate_conversation_image(
     # LLM 生成提示词
     prompt_parts: list[str] = []
     try:
-        async for event in stream_chat(messages):
+        async for event in stream_chat(messages, conv.model):
             if event["type"] == "content":
                 prompt_parts.append(event["content"])
     except Exception as e:

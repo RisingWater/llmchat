@@ -48,4 +48,6 @@ def init_db():
                        "parent_conversation_id INTEGER")
         _ensure_column(conn, "conversations", "fork_from_message_id",
                        "fork_from_message_id INTEGER")
+        _ensure_column(conn, "conversations", "model",
+                       "model VARCHAR(40) DEFAULT 'deepseek'")
         conn.commit()

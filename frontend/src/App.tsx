@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { App as AntApp } from "antd";
-import type { Conversation, Message } from "./types";
+import type { Conversation, Message, ModelOption } from "./types";
 import * as api from "./api";
 import LoginPage from "./components/LoginPage";
 import AppLayout from "./components/AppLayout";
@@ -14,6 +14,7 @@ export default function App() {
 
   const [token, setToken] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [models, setModels] = useState<ModelOption[]>([]);
   const [currentId, setCurrentId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState("");
@@ -44,6 +45,11 @@ export default function App() {
       return [];
     }
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    api.listModels().then(setModels).catch(() => setModels([]));
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -220,13 +226,13 @@ export default function App() {
     [conversations, currentId, sendMessage, sendVideoPrompt]
   );
 
-  const updateSystemPrompt = useCallback(
-    async (systemPrompt: string) => {
+  const updateConversationSettings = useCallback(
+    async (systemPrompt: string, model: string) => {
       if (!currentId) return;
-      await api.updateConversation(currentId, { system_prompt: systemPrompt });
+      await api.updateConversation(currentId, { system_prompt: systemPrompt, model });
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === currentId ? { ...c, system_prompt: systemPrompt } : c
+          c.id === currentId ? { ...c, system_prompt: systemPrompt, model } : c
         )
       );
     },
@@ -284,6 +290,7 @@ export default function App() {
         conversations={conversations}
         currentConversation={currentConv}
         messages={messages}
+        models={models}
         streaming={streaming}
         loading={loading}
         videoGenerating={videoGenerating}
@@ -293,7 +300,7 @@ export default function App() {
         onDeleteConversation={deleteConversation}
         onClearAll={handleClearAll}
         onSendMessage={handleSend}
-        onUpdateSystemPrompt={updateSystemPrompt}
+        onUpdateSettings={updateConversationSettings}
         onUpdateVideoSettings={updateVideoSettings}
         onUndoStep={handleUndoStep}
         onFork={forkConversation}

@@ -3,6 +3,7 @@ export interface Conversation {
   title: string;
   conv_type: "chat" | "video";
   system_prompt: string;
+  model: string;
   megapixels: number;
   steps: number;
   duration: number;
@@ -27,4 +28,10 @@ export interface Message {
 export interface ChatChunk {
   content?: string;
   error?: string;
+}
+
+export interface ModelOption {
+  id: string;
+  label: string;
+  context: number;
 }

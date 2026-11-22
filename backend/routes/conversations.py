@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from backend.auth import get_current_user
+from backend.config import MODEL_PROFILES
 from backend.database import get_db
 from backend.models import Conversation, Message, GeneratedImage
 from backend.schemas import (
@@ -32,7 +33,11 @@ def create_conversation(
     db: Session = Depends(get_db),
     _=Depends(get_current_user),
 ):
-    conv = Conversation(title=body.title, system_prompt=body.system_prompt)
+    conv = Conversation(
+        title=body.title,
+        system_prompt=body.system_prompt,
+        model=body.model if body.model in MODEL_PROFILES else "deepseek",
+    )
     db.add(conv)
     db.commit()
     db.refresh(conv)
@@ -102,6 +107,10 @@ def update_conversation(
         conv.title = body.title
     if body.system_prompt is not None:
         conv.system_prompt = body.system_prompt
+    if body.model is not None:
+        if body.model not in MODEL_PROFILES:
+            raise HTTPException(400, "未知模型")
+        conv.model = body.model
     if body.megapixels is not None:
         conv.megapixels = body.megapixels
     if body.steps is not None:
@@ -180,6 +189,7 @@ def fork_conversation(
         title=f"{title} · 分叉",
         conv_type="chat",
         system_prompt=conv.system_prompt,
+        model=conv.model,
         parent_conversation_id=conv.id,
         fork_from_message_id=src_msg.id,
     )

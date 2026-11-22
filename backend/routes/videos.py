@@ -185,7 +185,7 @@ async def polish_prompt(
     ]
     parts: list[str] = []
     try:
-        async for event in stream_chat(messages):
+        async for event in stream_chat(messages, conv.model):
             if event["type"] == "content":
                 parts.append(event["content"])
     except Exception as e:

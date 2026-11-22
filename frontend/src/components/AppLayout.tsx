@@ -5,7 +5,7 @@ import {
   SettingOutlined,
   LogoutOutlined,
 } from "@ant-design/icons";
-import type { Conversation, Message } from "../types";
+import type { Conversation, Message, ModelOption } from "../types";
 import ConversationList from "./ConversationList";
 import ChatArea from "./ChatArea";
 import SettingsPanel from "./SettingsPanel";
@@ -17,6 +17,7 @@ interface Props {
   conversations: Conversation[];
   currentConversation: Conversation | null;
   messages: Message[];
+  models: ModelOption[];
   streaming: string;
   loading: boolean;
   videoGenerating: boolean;
@@ -26,7 +27,7 @@ interface Props {
   onDeleteConversation: (id: number) => void;
   onClearAll: () => void;
   onSendMessage: (content: string) => void;
-  onUpdateSystemPrompt: (prompt: string) => void;
+  onUpdateSettings: (prompt: string, model: string) => void;
   onUpdateVideoSettings: (megapixels: number, steps: number, duration: number, keepAudio: boolean) => void;
   onUndoStep: () => void;
   onFork: (messageId: number) => Promise<void>;
@@ -37,6 +38,7 @@ export default function AppLayout({
   conversations,
   currentConversation,
   messages,
+  models,
   streaming,
   loading,
   videoGenerating,
@@ -46,7 +48,7 @@ export default function AppLayout({
   onDeleteConversation,
   onClearAll,
   onSendMessage,
-  onUpdateSystemPrompt,
+  onUpdateSettings,
   onUpdateVideoSettings,
   onUndoStep,
   onFork,
@@ -122,7 +124,9 @@ export default function AppLayout({
         ) : (
           <SettingsPanel
             systemPrompt={currentConversation?.system_prompt || ""}
-            onSave={(prompt) => { onUpdateSystemPrompt(prompt); setSettingsOpen(false); }}
+            model={currentConversation?.model ?? "deepseek"}
+            models={models}
+            onSave={(prompt, model) => { onUpdateSettings(prompt, model); setSettingsOpen(false); }}
           />
         )}
       </Drawer>

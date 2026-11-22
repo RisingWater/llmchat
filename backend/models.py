@@ -13,6 +13,8 @@ class Conversation(Base):
     # 会话类型：chat=聊天，video=图生视频
     conv_type = Column(String(20), default="chat")
     system_prompt = Column(Text, default="You are a helpful assistant.")
+    # 使用的模型：deepseek / local（档案见 config.MODEL_PROFILES）
+    model = Column(String(40), default="deepseek")
     # 图生视频状态：下一轮输入帧路径、已合并视频路径
     last_frame_path = Column(String(500), nullable=True)
     merged_video_path = Column(String(500), nullable=True)
