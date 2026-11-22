@@ -103,6 +103,23 @@ export async function clearConversationMessages(convId: number): Promise<void> {
   if (!res.ok) throw new Error("清除失败");
 }
 
+// 从某条消息处分叉出新会话（复制该消息及之前的全部历史）
+export async function forkConversation(
+  convId: number,
+  messageId: number
+): Promise<Conversation> {
+  const res = await fetch(`${BASE}/conversations/${convId}/fork`, {
+    method: "POST",
+    headers: headers(),
+    body: JSON.stringify({ message_id: messageId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: "分叉失败" }));
+    throw new Error(err.detail || "分叉失败");
+  }
+  return res.json();
+}
+
 // ---- 聊天 (SSE) ----
 export function sendMessage(
   convId: number,

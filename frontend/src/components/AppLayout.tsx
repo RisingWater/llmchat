@@ -29,6 +29,7 @@ interface Props {
   onUpdateSystemPrompt: (prompt: string) => void;
   onUpdateVideoSettings: (megapixels: number, steps: number, duration: number, keepAudio: boolean) => void;
   onUndoStep: () => void;
+  onFork: (messageId: number) => Promise<void>;
   onLogout: () => void;
 }
 
@@ -48,6 +49,7 @@ export default function AppLayout({
   onUpdateSystemPrompt,
   onUpdateVideoSettings,
   onUndoStep,
+  onFork,
   onLogout,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -85,6 +87,7 @@ export default function AppLayout({
           isVideo={currentConversation?.conv_type === "video"}
           onSend={onSendMessage}
           onUndoStep={onUndoStep}
+          onFork={onFork}
         />
       </Content>
 

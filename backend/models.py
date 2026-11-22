@@ -22,6 +22,9 @@ class Conversation(Base):
     duration = Column(Integer, default=5)
     # 是否保留视频音轨（0=不保留，存盘前去音轨）
     keep_audio = Column(Integer, default=0)
+    # 分叉来源：从哪个会话的哪条消息处分叉出来（普通会话为 NULL）
+    parent_conversation_id = Column(Integer, nullable=True)
+    fork_from_message_id = Column(Integer, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc),
                         onupdate=lambda: datetime.now(timezone.utc))

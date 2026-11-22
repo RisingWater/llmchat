@@ -87,6 +87,17 @@ export default function App() {
     setStreaming("");
   }, []);
 
+  // 从某条回答处分叉出新会话，并切换过去
+  const forkConversation = useCallback(
+    async (messageId: number) => {
+      if (!currentId) throw new Error("没有当前会话");
+      const conv = await api.forkConversation(currentId, messageId);
+      setConversations((prev) => [conv, ...prev]);
+      await selectConversation(conv.id);
+    },
+    [currentId, selectConversation]
+  );
+
   const deleteConversation = useCallback(
     async (id: number) => {
       await api.deleteConversation(id);
@@ -285,6 +296,7 @@ export default function App() {
         onUpdateSystemPrompt={updateSystemPrompt}
         onUpdateVideoSettings={updateVideoSettings}
         onUndoStep={handleUndoStep}
+        onFork={forkConversation}
         onLogout={handleLogout}
       />
       <VideoConversationModal

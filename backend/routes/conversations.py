@@ -10,6 +10,7 @@ from backend.schemas import (
     ConversationDetail,
     ConversationOut,
     ConversationUpdate,
+    ForkRequest,
 )
 from backend.video_service import mark_conversation_deleted
 
@@ -143,3 +144,62 @@ def delete_conversation(conv_id: int, db: Session = Depends(get_db), _=Depends(g
     db.delete(conv)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/{conv_id}/fork", response_model=ConversationOut)
+def fork_conversation(
+    conv_id: int,
+    body: ForkRequest,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """从某条消息处分叉出新的会话
+
+    新会话复制原会话中该消息（含）之前的全部消息与 system prompt，
+    之后两边互不影响；原会话保持不动。
+    """
+    conv = db.query(Conversation).get(conv_id)
+    if not conv:
+        raise HTTPException(404, "会话不存在")
+    if conv.conv_type == "video":
+        raise HTTPException(400, "图生视频会话不支持分叉")
+
+    src_msg = (
+        db.query(Message)
+        .filter(Message.id == body.message_id, Message.conversation_id == conv_id)
+        .first()
+    )
+    if not src_msg:
+        raise HTTPException(404, "消息不存在")
+
+    title = conv.title or "会话"
+    if len(title) > 190:
+        title = title[:190]
+
+    fork = Conversation(
+        title=f"{title} · 分叉",
+        conv_type="chat",
+        system_prompt=conv.system_prompt,
+        parent_conversation_id=conv.id,
+        fork_from_message_id=src_msg.id,
+    )
+    db.add(fork)
+    db.flush()
+
+    history = (
+        db.query(Message)
+        .filter(Message.conversation_id == conv_id, Message.id <= src_msg.id)
+        .order_by(Message.id)
+        .all()
+    )
+    for m in history:
+        db.add(Message(
+            conversation_id=fork.id,
+            role=m.role,
+            content=m.content,
+            created_at=m.created_at,
+        ))
+
+    db.commit()
+    db.refresh(fork)
+    return fork

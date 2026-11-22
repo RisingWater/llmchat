@@ -7,6 +7,8 @@ export interface Conversation {
   steps: number;
   duration: number;
   keep_audio: boolean;
+  parent_conversation_id: number | null;
+  fork_from_message_id: number | null;
   created_at: string;
   updated_at: string;
 }

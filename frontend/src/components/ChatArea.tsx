@@ -15,9 +15,10 @@ interface Props {
   isVideo: boolean;
   onSend: (content: string) => void;
   onUndoStep: () => void;
+  onFork: (messageId: number) => Promise<void>;
 }
 
-export default function ChatArea({ messages, streaming, loading, videoGenerating, conversationId, isVideo, onSend, onUndoStep }: Props) {
+export default function ChatArea({ messages, streaming, loading, videoGenerating, conversationId, isVideo, onSend, onUndoStep, onFork }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { message: antMsg } = App.useApp();
   const [mergedOpen, setMergedOpen] = useState(false);
@@ -58,6 +59,15 @@ export default function ChatArea({ messages, streaming, loading, videoGenerating
     setPolished(null);
   };
 
+  const handleForkMessage = async (messageId: number) => {
+    try {
+      await onFork(messageId);
+      antMsg.success("已分叉到新会话");
+    } catch (err: any) {
+      antMsg.error(err.message || "分叉失败");
+    }
+  };
+
   const handleViewMerged = async () => {
     if (!conversationId) return;
     const url = api.mergedVideoUrl(conversationId);
@@ -81,7 +91,13 @@ export default function ChatArea({ messages, streaming, loading, videoGenerating
         )}
 
         {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} conversationId={conversationId ?? 0} />
+          <MessageBubble
+            key={msg.id}
+            message={msg}
+            conversationId={conversationId ?? 0}
+            forkable={!isVideo && !loading}
+            onFork={handleForkMessage}
+          />
         ))}
 
         {streaming && (

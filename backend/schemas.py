@@ -35,6 +35,8 @@ class ConversationOut(BaseModel):
     steps: int = 8
     duration: int = 5
     keep_audio: bool = False
+    parent_conversation_id: int | None = None
+    fork_from_message_id: int | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -57,3 +59,8 @@ class MessageOut(BaseModel):
 
 class ChatRequest(BaseModel):
     content: str
+
+
+# ---- Fork ----
+class ForkRequest(BaseModel):
+    message_id: int
