@@ -50,4 +50,6 @@ def init_db():
                        "fork_from_message_id INTEGER")
         _ensure_column(conn, "conversations", "model",
                        "model VARCHAR(40) DEFAULT 'deepseek'")
+        _ensure_column(conn, "conversations", "max_tokens",
+                       "max_tokens INTEGER DEFAULT 10000")
         conn.commit()

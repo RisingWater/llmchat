@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Typography, Button, Image, Spin, App, Tooltip } from "antd";
+import { Typography, Button, Image, Spin, App, Tooltip, Popconfirm } from "antd";
 import {
   UserOutlined,
   RobotOutlined,
@@ -7,6 +7,7 @@ import {
   DownOutlined,
   RightOutlined,
   BranchesOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import type { Message } from "../types";
 import * as api from "../api";
@@ -38,6 +39,12 @@ function parseVideos(content: string): { text: string; videos: string[] } {
   return { text: text.trim(), videos };
 }
 
+// 从 /api/images/{id} 取出图片 id
+function imageIdFromUrl(url: string): number | null {
+  const m = url.match(/\/api\/images\/(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
 export default function MessageBubble({ message, conversationId, forkable, onFork }: Props) {
   const isUser = message.role === "user";
   const [genState, setGenState] = useState<{
@@ -45,6 +52,7 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
     imageUrl?: string;
     prompt?: string;
   }>({ loading: false });
+  const [hiddenImages, setHiddenImages] = useState<Set<string>>(new Set());
   const [forking, setForking] = useState(false);
   const [promptExpanded, setPromptExpanded] = useState(false);
   const { message: antMsg } = App.useApp();
@@ -52,6 +60,7 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
   const { text, images } = parseContent(message.content);
   const { text: textNoVideos, videos } = parseVideos(text);
   const displayText = textNoVideos;
+  const visibleImages = images.filter((img) => !hiddenImages.has(img.url));
 
   const handleGenerate = async () => {
     setGenState({ loading: true });
@@ -64,6 +73,31 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
     }
   };
 
+  const handleDeleteImage = async (url: string) => {
+    const imageId = imageIdFromUrl(url);
+    if (!imageId) return;
+    try {
+      await api.deleteImage(imageId);
+      setHiddenImages((prev) => new Set(prev).add(url));
+      antMsg.success("图片已删除");
+    } catch (err: any) {
+      antMsg.error(err.message || "删除失败");
+    }
+  };
+
+  const handleDeleteGenerated = async () => {
+    if (!genState.imageUrl) return;
+    const imageId = imageIdFromUrl(genState.imageUrl);
+    if (!imageId) return;
+    try {
+      await api.deleteImage(imageId);
+      setGenState({ loading: false });
+      antMsg.success("图片已删除");
+    } catch (err: any) {
+      antMsg.error(err.message || "删除失败");
+    }
+  };
+
   const handleFork = async () => {
     if (!onFork || forking) return;
     setForking(true);
@@ -73,6 +107,25 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
       setForking(false);
     }
   };
+
+  const deleteButton = (onConfirm: () => void) => (
+    <Popconfirm
+      title="删除这张图片？"
+      onConfirm={onConfirm}
+      okText="删除"
+      cancelText="取消"
+    >
+      <Button
+        type="text"
+        size="small"
+        danger
+        icon={<DeleteOutlined />}
+        style={{ fontSize: 11, padding: 0 }}
+      >
+        删除
+      </Button>
+    </Popconfirm>
+  );
 
   return (
     <div
@@ -126,15 +179,15 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
         ))}
 
         {/* 已保存的图片（从 content 解析） */}
-        {images.map((img, i) => (
-          <div key={i} style={{ marginTop: 6 }}>
+        {visibleImages.map((img) => (
+          <div key={img.url} style={{ marginTop: 6 }}>
             <Image
               src={img.url}
               alt={img.alt}
               style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8 }}
               placeholder
             />
-            <div style={{ marginTop: 4 }}>
+            <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
               <Button
                 type="text"
                 size="small"
@@ -144,16 +197,17 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
               >
                 提示词
               </Button>
-              {promptExpanded && (
-                <Typography.Paragraph
-                  type="secondary"
-                  style={{ fontSize: 11, margin: "4px 0 0 0", padding: "4px 8px",
-                    background: "#fafafa", borderRadius: 4 }}
-                >
-                  {img.alt}
-                </Typography.Paragraph>
-              )}
+              {deleteButton(() => handleDeleteImage(img.url))}
             </div>
+            {promptExpanded && (
+              <Typography.Paragraph
+                type="secondary"
+                style={{ fontSize: 11, margin: "4px 0 0 0", padding: "4px 8px",
+                  background: "#fafafa", borderRadius: 4 }}
+              >
+                {img.alt}
+              </Typography.Paragraph>
+            )}
           </div>
         ))}
 
@@ -193,26 +247,29 @@ export default function MessageBubble({ message, conversationId, forkable, onFor
                     >
                       提示词
                     </Button>
-                    {promptExpanded && (
-                      <Typography.Paragraph
-                        type="secondary"
-                        style={{ fontSize: 11, margin: "4px 0 0 0", padding: "4px 8px",
-                          background: "#fafafa", borderRadius: 4 }}
-                      >
-                        {genState.prompt}
-                      </Typography.Paragraph>
-                    )}
                   </div>
                 )}
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<CameraOutlined />}
-                  onClick={handleGenerate}
-                  style={{ color: "#999", fontSize: 12, marginTop: 4 }}
-                >
-                  重新生成
-                </Button>
+                {promptExpanded && genState.prompt && (
+                  <Typography.Paragraph
+                    type="secondary"
+                    style={{ fontSize: 11, margin: "4px 0 0 0", padding: "4px 8px",
+                      background: "#fafafa", borderRadius: 4 }}
+                  >
+                    {genState.prompt}
+                  </Typography.Paragraph>
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<CameraOutlined />}
+                    onClick={handleGenerate}
+                    style={{ color: "#999", fontSize: 12 }}
+                  >
+                    重新生成
+                  </Button>
+                  {deleteButton(handleDeleteGenerated)}
+                </div>
               </div>
             )}
 

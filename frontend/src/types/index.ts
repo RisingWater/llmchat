@@ -4,6 +4,7 @@ export interface Conversation {
   conv_type: "chat" | "video";
   system_prompt: string;
   model: string;
+  max_tokens: number;
   megapixels: number;
   steps: number;
   duration: number;

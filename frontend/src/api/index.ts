@@ -74,6 +74,7 @@ export async function updateConversation(
     title?: string;
     system_prompt?: string;
     model?: string;
+    max_tokens?: number;
     megapixels?: number;
     steps?: number;
     duration?: number;
@@ -216,6 +217,15 @@ export async function generateImage(
     throw new Error(err.detail || "生成失败");
   }
   return res.json();
+}
+
+// ---- 图片删除 ----
+export async function deleteImage(imageId: number): Promise<void> {
+  const res = await fetch(`${BASE}/images/${imageId}`, {
+    method: "DELETE",
+    headers: headers(),
+  });
+  if (!res.ok) throw new Error("删除失败");
 }
 
 // ---- 视频提示词润色（DeepSeek，中文）----

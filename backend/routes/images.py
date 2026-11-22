@@ -43,6 +43,29 @@ def serve_image(image_id: int, db: Session = Depends(get_db)):
     return Response(content=img.data, media_type="image/png")
 
 
+@router.delete("/{image_id}")
+def delete_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    _=Depends(get_current_user),
+):
+    """删除生成的图片，并从所属消息的 content 里去掉它的 markdown"""
+    img = db.query(GeneratedImage).get(image_id)
+    if not img:
+        raise HTTPException(404, "图片不存在")
+
+    msg = db.query(Message).get(img.message_id)
+    if msg:
+        url = f"/api/images/{img.id}"
+        msg.content = re.sub(
+            r"\n*!\[[^\]]*\]\(" + re.escape(url) + r"\)", "", msg.content
+        ).strip()
+
+    db.delete(img)
+    db.commit()
+    return {"ok": True}
+
+
 @router.post("/generate", response_model=GenerateResponse)
 async def generate_conversation_image(
     body: GenerateRequest,

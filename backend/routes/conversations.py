@@ -37,6 +37,7 @@ def create_conversation(
         title=body.title,
         system_prompt=body.system_prompt,
         model=body.model if body.model in MODEL_PROFILES else "deepseek",
+        max_tokens=max(1, body.max_tokens),
     )
     db.add(conv)
     db.commit()
@@ -111,6 +112,8 @@ def update_conversation(
         if body.model not in MODEL_PROFILES:
             raise HTTPException(400, "未知模型")
         conv.model = body.model
+    if body.max_tokens is not None:
+        conv.max_tokens = max(1, body.max_tokens)
     if body.megapixels is not None:
         conv.megapixels = body.megapixels
     if body.steps is not None:
@@ -190,6 +193,7 @@ def fork_conversation(
         conv_type="chat",
         system_prompt=conv.system_prompt,
         model=conv.model,
+        max_tokens=conv.max_tokens,
         parent_conversation_id=conv.id,
         fork_from_message_id=src_msg.id,
     )

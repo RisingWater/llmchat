@@ -14,6 +14,9 @@ from backend.config import DEFAULT_MODEL, MODEL_PROFILES
 # 给模型输出预留的 token，避免输入占满窗口导致回答被截断
 OUTPUT_RESERVE = 8192
 
+# 本地模型兜底停止符：模型发了终止 token 但服务端不认时也能停下来（按模型系列都列上，互不冲突）
+LOCAL_STOP_TOKENS = ["<|im_end|>", "<|eot_id|>", "</s>"]
+
 # 本地模型名探测缓存（llama.cpp 的 /v1/models）
 _local_model_cache: dict[str, str] = {}
 
@@ -85,15 +88,21 @@ async def _resolve_model(profile: dict) -> str:
 
 
 async def stream_chat(
-    messages: list[dict], model_id: str = DEFAULT_MODEL
+    messages: list[dict],
+    model_id: str = DEFAULT_MODEL,
+    max_tokens: int | None = None,
 ) -> AsyncGenerator[dict, None]:
     """流式调用 OpenAI 兼容端点，逐块返回文本
 
     调用前按该模型的上下文窗口裁剪历史（丢老留新）。
+    max_tokens 为会话设置的输出上限，超过模型上限时按模型上限截。
     """
     profile = model_profile(model_id)
     base = profile["base"].rstrip("/")
     payload = trim_messages(messages, profile["context"])
+
+    limit = profile["max_tokens"] if max_tokens is None else max_tokens
+    limit = max(1, min(limit, profile["max_tokens"]))
 
     headers = {"Content-Type": "application/json"}
     if profile["key"]:
@@ -102,12 +111,21 @@ async def stream_chat(
     timeout = httpx.Timeout(profile["timeout"], connect=10.0)
     try:
         model_name = await _resolve_model(profile)
+        body = {
+            "model": model_name,
+            "messages": payload,
+            "stream": True,
+            # 必须显式给上限：llama.cpp 不传 max_tokens 时 n_predict=-1，会一直生成
+            "max_tokens": limit,
+        }
+        if profile["id"] == "local":
+            body["stop"] = LOCAL_STOP_TOKENS
         async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream(
                 "POST",
                 f"{base}/chat/completions",
                 headers=headers,
-                json={"model": model_name, "messages": payload, "stream": True},
+                json=body,
             ) as response:
                 if response.status_code >= 400:
                     body = (await response.aread()).decode("utf-8", "replace")[:300]

@@ -27,7 +27,8 @@ interface Props {
   onDeleteConversation: (id: number) => void;
   onClearAll: () => void;
   onSendMessage: (content: string) => void;
-  onUpdateSettings: (prompt: string, model: string) => void;
+  onStopGeneration: () => void;
+  onUpdateSettings: (prompt: string, model: string, maxTokens: number) => void;
   onUpdateVideoSettings: (megapixels: number, steps: number, duration: number, keepAudio: boolean) => void;
   onUndoStep: () => void;
   onFork: (messageId: number) => Promise<void>;
@@ -48,6 +49,7 @@ export default function AppLayout({
   onDeleteConversation,
   onClearAll,
   onSendMessage,
+  onStopGeneration,
   onUpdateSettings,
   onUpdateVideoSettings,
   onUndoStep,
@@ -88,6 +90,7 @@ export default function AppLayout({
           conversationId={currentConversation?.id ?? null}
           isVideo={currentConversation?.conv_type === "video"}
           onSend={onSendMessage}
+          onStop={onStopGeneration}
           onUndoStep={onUndoStep}
           onFork={onFork}
         />
@@ -126,7 +129,11 @@ export default function AppLayout({
             systemPrompt={currentConversation?.system_prompt || ""}
             model={currentConversation?.model ?? "deepseek"}
             models={models}
-            onSave={(prompt, model) => { onUpdateSettings(prompt, model); setSettingsOpen(false); }}
+            maxTokens={currentConversation?.max_tokens ?? 10000}
+            onSave={(prompt, model, maxTokens) => {
+              onUpdateSettings(prompt, model, maxTokens);
+              setSettingsOpen(false);
+            }}
           />
         )}
       </Drawer>

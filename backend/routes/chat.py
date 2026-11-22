@@ -50,7 +50,7 @@ async def chat(
         full_text: list[str] = []
 
         try:
-            async for event in stream_chat(api_messages, conv.model):
+            async for event in stream_chat(api_messages, conv.model, conv.max_tokens):
                 if event["type"] == "content":
                     full_text.append(event["content"])
                     yield f"data: {json.dumps({'content': event['content']})}\n\n"
@@ -62,22 +62,21 @@ async def chat(
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
             yield "data: [DONE]\n\n"
             return
+        finally:
+            # 正常结束或客户端中途断开（停止生成/切换会话）时，都保存已经生成的部分
+            save_content = "".join(full_text).strip()
+            if save_content:
+                save_db = SessionLocal()
+                try:
+                    save_db.add(Message(
+                        conversation_id=conv_id,
+                        role="assistant",
+                        content=save_content,
+                    ))
+                    save_db.commit()
+                finally:
+                    save_db.close()
 
         yield "data: [DONE]\n\n"
-
-        # 保存
-        save_content = "".join(full_text).strip()
-        if save_content:
-            save_db = SessionLocal()
-            try:
-                assistant_msg = Message(
-                    conversation_id=conv_id,
-                    role="assistant",
-                    content=save_content,
-                )
-                save_db.add(assistant_msg)
-                save_db.commit()
-            finally:
-                save_db.close()
 
     return StreamingResponse(generate(), media_type="text/event-stream")

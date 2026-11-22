@@ -1,11 +1,12 @@
 import { useRef, useEffect } from "react";
 import { Input, Button } from "antd";
-import { SendOutlined, HighlightOutlined } from "@ant-design/icons";
+import { SendOutlined, HighlightOutlined, StopOutlined } from "@ant-design/icons";
 
 interface Props {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onStop?: () => void;
   loading: boolean;
   placeholder?: string;
   // 图生视频模式：显示"润色"按钮，回车触发润色而非直接发送
@@ -18,6 +19,7 @@ export default function MessageInput({
   value,
   onChange,
   onSend,
+  onStop,
   loading,
   placeholder,
   polishable,
@@ -95,6 +97,14 @@ export default function MessageInput({
         >
           开始制作
         </Button>
+      ) : loading && onStop ? (
+        <Button
+          danger
+          shape="circle"
+          icon={<StopOutlined />}
+          onClick={onStop}
+          style={{ flexShrink: 0 }}
+        />
       ) : (
         <Button
           type="primary"

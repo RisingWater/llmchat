@@ -16,12 +16,14 @@ class ConversationCreate(BaseModel):
     title: str = "New Chat"
     system_prompt: str = "You are a helpful assistant."
     model: str = "deepseek"
+    max_tokens: int = 10000
 
 
 class ConversationUpdate(BaseModel):
     title: str | None = None
     system_prompt: str | None = None
     model: str | None = None
+    max_tokens: int | None = None
     megapixels: float | None = None
     steps: int | None = None
     duration: int | None = None
@@ -34,6 +36,7 @@ class ConversationOut(BaseModel):
     conv_type: str
     system_prompt: str
     model: str = "deepseek"
+    max_tokens: int = 10000
     megapixels: float = 0.8
     steps: int = 8
     duration: int = 5

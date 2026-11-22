@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { App as AntApp } from "antd";
 import type { Conversation, Message, ModelOption } from "./types";
 import * as api from "./api";
@@ -21,6 +21,16 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [videoGenerating, setVideoGenerating] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
+
+  // 当前流式请求的控制器与已收到内容（停止生成/切换会话时用）
+  const abortRef = useRef<AbortController | null>(null);
+  const streamedRef = useRef("");
+
+  const abortStream = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    streamedRef.current = "";
+  }, []);
 
   const handleLogin = useCallback(async (password: string) => {
     const t = await api.login(password);
@@ -63,6 +73,8 @@ export default function App() {
   }, [token]);
 
   const selectConversation = useCallback(async (id: number) => {
+    abortStream();
+    setLoading(false);
     setCurrentId(id);
     setStreaming("");
     try {
@@ -71,9 +83,11 @@ export default function App() {
     } catch {
       setMessages([]);
     }
-  }, []);
+  }, [abortStream]);
 
   const newConversation = useCallback(async () => {
+    abortStream();
+    setLoading(false);
     try {
       const conv = await api.createConversation();
       setConversations((prev) => [conv, ...prev]);
@@ -83,15 +97,17 @@ export default function App() {
     } catch {
       // ignore
     }
-  }, []);
+  }, [abortStream]);
 
   const createVideoConversation = useCallback(async (file: File, title?: string) => {
+    abortStream();
+    setLoading(false);
     const conv = await api.createVideoConversation(file, title);
     setConversations((prev) => [conv, ...prev]);
     setCurrentId(conv.id);
     setMessages([]);
     setStreaming("");
-  }, []);
+  }, [abortStream]);
 
   // 从某条回答处分叉出新会话，并切换过去
   const forkConversation = useCallback(
@@ -143,14 +159,16 @@ export default function App() {
 
       let streamedContent = "";
 
-      api.sendMessage(
+      const controller = api.sendMessage(
         currentId,
         content,
         (text) => {
           streamedContent += text;
+          streamedRef.current = streamedContent;
           setStreaming(streamedContent);
         },
         () => {
+          abortRef.current = null;
           setLoading(false);
           const assistantMsg: Message = {
             id: Date.now() + 1,
@@ -163,6 +181,7 @@ export default function App() {
           loadConversations().then(setConversations);
         },
         (err) => {
+          abortRef.current = null;
           setLoading(false);
           setStreaming("");
           const errMsg: Message = {
@@ -174,9 +193,27 @@ export default function App() {
           setMessages((prev) => [...prev, errMsg]);
         }
       );
+      abortRef.current = controller;
     },
     [currentId, loadConversations]
   );
+
+  // 停止生成：保留已收到的内容（后端在 SSE 断开时也会保存这部分）
+  const stopGeneration = useCallback(() => {
+    const partial = streamedRef.current.trim();
+    abortStream();
+    setLoading(false);
+    setStreaming("");
+    if (partial) {
+      const partialMsg: Message = {
+        id: Date.now() + 1,
+        role: "assistant",
+        content: partial,
+        created_at: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, partialMsg]);
+    }
+  }, [abortStream]);
 
   // 图生视频：输入提示词即触发视频生成，生成成功后刷新消息（视频由后端写入）
   const sendVideoPrompt = useCallback(
@@ -227,12 +264,18 @@ export default function App() {
   );
 
   const updateConversationSettings = useCallback(
-    async (systemPrompt: string, model: string) => {
+    async (systemPrompt: string, model: string, maxTokens: number) => {
       if (!currentId) return;
-      await api.updateConversation(currentId, { system_prompt: systemPrompt, model });
+      await api.updateConversation(currentId, {
+        system_prompt: systemPrompt,
+        model,
+        max_tokens: maxTokens,
+      });
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === currentId ? { ...c, system_prompt: systemPrompt, model } : c
+          c.id === currentId
+            ? { ...c, system_prompt: systemPrompt, model, max_tokens: maxTokens }
+            : c
         )
       );
     },
@@ -300,6 +343,7 @@ export default function App() {
         onDeleteConversation={deleteConversation}
         onClearAll={handleClearAll}
         onSendMessage={handleSend}
+        onStopGeneration={stopGeneration}
         onUpdateSettings={updateConversationSettings}
         onUpdateVideoSettings={updateVideoSettings}
         onUndoStep={handleUndoStep}

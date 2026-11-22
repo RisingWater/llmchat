@@ -14,11 +14,12 @@ interface Props {
   conversationId: number | null;
   isVideo: boolean;
   onSend: (content: string) => void;
+  onStop: () => void;
   onUndoStep: () => void;
   onFork: (messageId: number) => Promise<void>;
 }
 
-export default function ChatArea({ messages, streaming, loading, videoGenerating, conversationId, isVideo, onSend, onUndoStep, onFork }: Props) {
+export default function ChatArea({ messages, streaming, loading, videoGenerating, conversationId, isVideo, onSend, onStop, onUndoStep, onFork }: Props) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { message: antMsg } = App.useApp();
   const [mergedOpen, setMergedOpen] = useState(false);
@@ -182,6 +183,7 @@ export default function ChatArea({ messages, streaming, loading, videoGenerating
         value={draft}
         onChange={setDraft}
         onSend={handleSend}
+        onStop={onStop}
         loading={loading}
         polishable={isVideo}
         onPolish={handlePolish}

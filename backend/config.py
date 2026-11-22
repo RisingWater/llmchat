@@ -21,6 +21,11 @@ LOCAL_LLM_KEY = os.getenv("LOCAL_LLM_KEY", "")
 LOCAL_CONTEXT_LIMIT = int(os.getenv("LOCAL_CONTEXT_LIMIT", "100000"))
 DEEPSEEK_CONTEXT_LIMIT = int(os.getenv("DEEPSEEK_CONTEXT_LIMIT", "200000"))
 
+# 单次输出上限（token）：会话设置里可调，但不能超过这里
+# 本地不传 max_tokens 时 llama.cpp 按 n_predict=-1 无限生成，必须有上限
+LOCAL_MAX_TOKENS = int(os.getenv("LOCAL_MAX_TOKENS", "32768"))
+DEEPSEEK_MAX_TOKENS = int(os.getenv("DEEPSEEK_MAX_TOKENS", "8192"))
+
 MODEL_PROFILES = {
     "deepseek": {
         "label": "DeepSeek",
@@ -28,6 +33,7 @@ MODEL_PROFILES = {
         "key": API_KEY,
         "model": MODEL_NAME,
         "context": DEEPSEEK_CONTEXT_LIMIT,
+        "max_tokens": DEEPSEEK_MAX_TOKENS,
         "timeout": 300,
     },
     "local": {
@@ -36,6 +42,7 @@ MODEL_PROFILES = {
         "key": LOCAL_LLM_KEY,
         "model": LOCAL_LLM_MODEL,
         "context": LOCAL_CONTEXT_LIMIT,
+        "max_tokens": LOCAL_MAX_TOKENS,
         "timeout": 900,
     },
 }

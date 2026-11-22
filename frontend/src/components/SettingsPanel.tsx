@@ -1,17 +1,25 @@
 import { useState, useEffect } from "react";
-import { Input, Button, App, Segmented } from "antd";
+import { Input, InputNumber, Button, App, Segmented } from "antd";
 import type { ModelOption } from "../types";
 
 interface Props {
   systemPrompt: string;
   model: string;
   models: ModelOption[];
-  onSave: (prompt: string, model: string) => void;
+  maxTokens: number;
+  onSave: (prompt: string, model: string, maxTokens: number) => void;
 }
 
-export default function SettingsPanel({ systemPrompt, model, models, onSave }: Props) {
+export default function SettingsPanel({
+  systemPrompt,
+  model,
+  models,
+  maxTokens,
+  onSave,
+}: Props) {
   const [value, setValue] = useState(systemPrompt);
   const [selectedModel, setSelectedModel] = useState(model);
+  const [maxOutput, setMaxOutput] = useState(maxTokens);
   const { message } = App.useApp();
 
   useEffect(() => {
@@ -22,8 +30,16 @@ export default function SettingsPanel({ systemPrompt, model, models, onSave }: P
     setSelectedModel(model);
   }, [model]);
 
+  useEffect(() => {
+    setMaxOutput(maxTokens);
+  }, [maxTokens]);
+
   const handleSave = () => {
-    onSave(value.trim() || "You are a helpful assistant.", selectedModel);
+    onSave(
+      value.trim() || "You are a helpful assistant.",
+      selectedModel,
+      Math.max(1, Math.round(maxOutput || 10000))
+    );
     message.success("已保存");
   };
 
@@ -45,6 +61,19 @@ export default function SettingsPanel({ systemPrompt, model, models, onSave }: P
           value={selectedModel}
           onChange={(v) => setSelectedModel(String(v))}
           options={options}
+        />
+      </div>
+      <div>
+        <div style={{ marginBottom: 8, fontWeight: 500, color: "#666" }}>
+          最大输出
+        </div>
+        <InputNumber
+          value={maxOutput}
+          onChange={(v) => setMaxOutput(typeof v === "number" ? v : 10000)}
+          min={1}
+          step={1000}
+          addonAfter="token"
+          style={{ width: "100%" }}
         />
       </div>
       <div>
